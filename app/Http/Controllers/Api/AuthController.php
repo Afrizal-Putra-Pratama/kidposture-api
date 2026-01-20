@@ -5,67 +5,100 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\ValidationException;
 
 class AuthController extends Controller
 {
-    public function register(Request $request)
-    {
-        $data = $request->validate([
-            'name'     => 'required|string|max:255',
-            'email'    => 'required|email|unique:users,email',
-            'password' => 'required|string|min:6',
-        ]);
-
-        $user = User::create([
-            'name'       => $data['name'],
-            'email'      => $data['email'],
-            'password'   => Hash::make($data['password']),
-            'role'       => 'PARENT',   // default orang tua
-            'is_premium' => false,
-        ]);
-
-        $token = $user->createToken('api_token')->plainTextToken;
-
-        return response()->json([
-            'user'  => $user,
-            'token' => $token,
-        ], 201);
-    }
-
+    /**
+     * Login user
+     */
     public function login(Request $request)
     {
-        $data = $request->validate([
-            'email'    => 'required|email',
-            'password' => 'required|string',
+        $request->validate([
+            'email' => 'required|email',
+            'password' => 'required',
         ]);
 
-        $user = User::where('email', $data['email'])->first();
+        $user = User::where('email', $request->email)->first();
 
-        if (! $user || ! Hash::check($data['password'], $user->password)) {
+        if (!$user || !Hash::check($request->password, $user->password)) {
             throw ValidationException::withMessages([
-                'email' => ['Kredensial tidak valid.'],
+                'email' => ['Email atau password salah.'],
             ]);
         }
 
-        $token = $user->createToken('api_token')->plainTextToken;
+        // ✅ Buat token untuk user
+        $token = $user->createToken('auth_token')->plainTextToken;
 
         return response()->json([
-            'user'  => $user,
+            'message' => 'Login berhasil',
             'token' => $token,
-        ]);
+            'user' => [
+                'id' => $user->id,
+                'name' => $user->name,
+                'email' => $user->email,
+                'role' => $user->role ?? 'parent', // default parent
+                'is_premium' => $user->is_premium ?? false,
+            ]
+        ], 200);
     }
 
-    public function me(Request $request)
+    /**
+     * Register user baru
+     */
+    public function register(Request $request)
     {
-        return response()->json($request->user());
+        $validated = $request->validate([
+            'name' => 'required|string|max:255',
+            'email' => 'required|email|unique:users,email',
+            'password' => 'required|string|min:8|confirmed',
+        ]);
+
+        $user = User::create([
+            'name' => $validated['name'],
+            'email' => $validated['email'],
+            'password' => Hash::make($validated['password']),
+            'role' => 'parent', // default role
+            'is_premium' => false,
+        ]);
+
+        $token = $user->createToken('auth_token')->plainTextToken;
+
+        return response()->json([
+            'message' => 'Registrasi berhasil',
+            'token' => $token,
+            'user' => [
+                'id' => $user->id,
+                'name' => $user->name,
+                'email' => $user->email,
+                'role' => $user->role,
+                'is_premium' => $user->is_premium,
+            ]
+        ], 201);
     }
 
+    /**
+     * Logout user
+     */
     public function logout(Request $request)
     {
+        // Hapus token yang sedang dipakai
         $request->user()->currentAccessToken()->delete();
 
-        return response()->json(['message' => 'Logged out']);
+        return response()->json([
+            'message' => 'Logout berhasil'
+        ], 200);
+    }
+
+    /**
+     * Get user yang sedang login
+     */
+    public function me(Request $request)
+    {
+        return response()->json([
+            'user' => $request->user()
+        ]);
     }
 }

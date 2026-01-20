@@ -4,9 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Str;
-use Illuminate\Support\Facades\Storage;
 
 class Article extends Model
 {
@@ -14,38 +12,22 @@ class Article extends Model
 
     protected $fillable = [
         'category_id',
-        'author_id',
+        'user_id',
         'title',
         'slug',
         'excerpt',
         'content',
         'thumbnail',
         'read_time',
-        'views',
         'is_published',
         'published_at',
+        'views'
     ];
 
     protected $casts = [
         'is_published' => 'boolean',
-        'published_at' => 'datetime',
-        'views' => 'integer',
+        'published_at' => 'datetime'
     ];
-
-    public function getThumbnailUrlAttribute(): ?string
-    {
-        return $this->thumbnail ? Storage::disk('public')->url($this->thumbnail) : null;
-    }
-
-    public function category(): BelongsTo
-    {
-        return $this->belongsTo(ArticleCategory::class, 'category_id');
-    }
-
-    public function author(): BelongsTo
-    {
-        return $this->belongsTo(User::class, 'author_id');
-    }
 
     protected static function boot()
     {
@@ -55,9 +37,16 @@ class Article extends Model
             if (empty($article->slug)) {
                 $article->slug = Str::slug($article->title);
             }
-            if (empty($article->author_id)) {
-                $article->author_id = auth()->id() ?? 1;
-            }
         });
+    }
+
+    public function category()
+    {
+        return $this->belongsTo(ArticleCategory::class, 'category_id');
+    }
+
+    public function author()
+    {
+        return $this->belongsTo(User::class, 'user_id');
     }
 }

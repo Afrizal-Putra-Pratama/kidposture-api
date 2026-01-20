@@ -20,9 +20,8 @@ class User extends Authenticatable
         'name',
         'email',
         'password',
-        // tambahkan kalau mau mass-assign role & is_premium
-        // 'role',
-        // 'is_premium',
+        'role',        // ✅ Uncomment kalau ada kolom role
+        'is_premium',  // ✅ Uncomment kalau ada kolom is_premium
     ];
 
     /**
@@ -42,10 +41,11 @@ class User extends Authenticatable
      */
     protected $casts = [
         'email_verified_at' => 'datetime',
-        'password'          => 'hashed',
+        'password' => 'hashed',
+        'is_premium' => 'boolean',  // ✅ Tambah cast untuk is_premium
     ];
 
-    // RELASI KE CHILDREN
+    // ✅ RELASI KE CHILDREN
     public function children()
     {
         return $this->hasMany(Child::class);

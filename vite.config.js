@@ -1,11 +1,18 @@
-import { defineConfig } from 'vite';
-import laravel from 'laravel-vite-plugin';
+import { defineConfig } from 'vite'
+import react from '@vitejs/plugin-react'
 
 export default defineConfig({
-    plugins: [
-        laravel({
-            input: ['resources/css/app.css', 'resources/js/app.js'],
-            refresh: true,
-        }),
-    ],
-});
+  plugins: [react()],
+  server: {
+    proxy: {
+      '/api': {
+        target: 'http://kidposture-api.test',
+        changeOrigin: true,
+      },
+      '/sanctum': {
+        target: 'http://kidposture-api.test',
+        changeOrigin: true,
+      }
+    }
+  }
+})
