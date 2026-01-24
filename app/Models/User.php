@@ -11,6 +11,11 @@ class User extends Authenticatable
 {
     use HasApiTokens, HasFactory, Notifiable;
 
+    // ✅ Konstanta role
+    const ROLE_PARENT = 'parent';
+    const ROLE_PHYSIO = 'physio';
+    const ROLE_ADMIN  = 'admin';
+
     /**
      * The attributes that are mass assignable.
      *
@@ -20,8 +25,8 @@ class User extends Authenticatable
         'name',
         'email',
         'password',
-        'role',        // ✅ Uncomment kalau ada kolom role
-        'is_premium',  // ✅ Uncomment kalau ada kolom is_premium
+        'role',
+        'is_premium',
     ];
 
     /**
@@ -42,12 +47,28 @@ class User extends Authenticatable
     protected $casts = [
         'email_verified_at' => 'datetime',
         'password' => 'hashed',
-        'is_premium' => 'boolean',  // ✅ Tambah cast untuk is_premium
+        'is_premium' => 'boolean',
     ];
 
-    // ✅ RELASI KE CHILDREN
+    // RELASI KE CHILDREN
     public function children()
     {
         return $this->hasMany(Child::class);
+    }
+
+    // Helper role checks (optional tapi enak dipakai)
+    public function isParent(): bool
+    {
+        return $this->role === self::ROLE_PARENT;
+    }
+
+    public function isPhysio(): bool
+    {
+        return $this->role === self::ROLE_PHYSIO;
+    }
+
+    public function isAdmin(): bool
+    {
+        return $this->role === self::ROLE_ADMIN;
     }
 }

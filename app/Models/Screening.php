@@ -16,6 +16,8 @@ class Screening extends Model
         'category',
         'metrics',
         'summary',
+        'is_multi_view',
+        'total_views',
     ];
 
     protected $casts = [
@@ -36,5 +38,10 @@ class Screening extends Model
     {
         return $this->hasMany(ScreeningImage::class);
     }
-}
 
+    // ✅ Relasi ke rekomendasi manual fisioterapis
+    public function manualRecommendations()
+    {
+        return $this->hasMany(ScreeningRecommendation::class);
+    }
+}
