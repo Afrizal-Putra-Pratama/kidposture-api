@@ -39,12 +39,21 @@
                                 <i class="bi bi-speedometer2"></i> Dashboard
                             </a>
                         </li>
+
                         <li class="nav-item">
                             <a class="nav-link {{ request()->routeIs('admin.articles.*') ? 'active' : '' }}" 
                                href="{{ route('admin.articles.index') }}">
                                 <i class="bi bi-file-earmark-text"></i> Articles
                             </a>
                         </li>
+
+                        <li class="nav-item">
+                            <a class="nav-link {{ request()->routeIs('admin.physiotherapists.*') ? 'active' : '' }}" 
+                               href="{{ route('admin.physiotherapists.index') }}">
+                                <i class="bi bi-hospital"></i> Physiotherapists
+                            </a>
+                        </li>
+
                         <li class="nav-item mt-4">
                             <form action="{{ route('logout') }}" method="POST">
                                 @csrf

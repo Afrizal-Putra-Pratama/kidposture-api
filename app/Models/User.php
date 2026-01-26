@@ -46,8 +46,8 @@ class User extends Authenticatable
      */
     protected $casts = [
         'email_verified_at' => 'datetime',
-        'password' => 'hashed',
-        'is_premium' => 'boolean',
+        'password'          => 'hashed',
+        'is_premium'        => 'boolean',
     ];
 
     // RELASI KE CHILDREN
@@ -56,7 +56,13 @@ class User extends Authenticatable
         return $this->hasMany(Child::class);
     }
 
-    // Helper role checks (optional tapi enak dipakai)
+    // RELASI KE PHYSIOTHERAPIST (1 user = 1 profil fisio)
+    public function physiotherapist()
+    {
+        return $this->hasOne(Physiotherapist::class, 'user_id');
+    }
+
+    // Helper role checks
     public function isParent(): bool
     {
         return $this->role === self::ROLE_PARENT;

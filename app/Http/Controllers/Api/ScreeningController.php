@@ -10,7 +10,6 @@ use App\Models\ScreeningRecommendation;
 use App\Services\PostureAiService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Facades\Log;
 
 class ScreeningController extends Controller
 {
@@ -39,23 +38,25 @@ class ScreeningController extends Controller
         // VALIDASI: bisa upload 1-3 foto sekaligus
         $data = $request->validate([
             'images' => 'required|array|min:1|max:3',
-            'images.*.type' => 'required|in:FRONT,SIDE,BACK',
+            'images.*.type'  => 'required|in:FRONT,SIDE,BACK',
             'images.*.image' => 'required|image|max:5120',
         ]);
 
         // Buat screening SATU record
         $screening = Screening::create([
-            'child_id' => $child->id,
-            'user_id' => $request->user()->id,
-            'score' => null,
-            'category' => null,
-            'metrics' => null,
-            'summary' => null,
-            'is_multi_view' => count($data['images']) > 1,
-            'total_views' => count($data['images']),
+            'child_id'           => $child->id,
+            'user_id'            => $request->user()->id,
+            'score'              => null,
+            'category'           => null,
+            'metrics'            => null,
+            'summary'            => null,
+            'is_multi_view'      => count($data['images']) > 1,
+            'total_views'        => count($data['images']),
+            'physiotherapist_id' => null,
+            'referral_status'    => 'none',
         ]);
 
-        $allScores = [];
+        $allScores  = [];
         $allMetrics = [];
 
         // LOOP setiap foto
@@ -64,35 +65,34 @@ class ScreeningController extends Controller
             $type = $imageData['type'];
 
             // Simpan original
-            $filename = uniqid('screening_') . '.' . $file->getClientOriginalExtension();
+            $filename  = uniqid('screening_') . '.' . $file->getClientOriginalExtension();
             $directory = 'screenings';
             Storage::disk('public')->put($directory . '/' . $filename, file_get_contents($file->getPathname()));
             $path = $directory . '/' . $filename;
 
             $screeningImage = ScreeningImage::create([
-                'screening_id' => $screening->id,
-                'type' => $type,
-                'path' => $path,
+                'screening_id'   => $screening->id,
+                'type'           => $type,
+                'path'           => $path,
                 'processed_path' => null,
-                'recommendations' => null,
+                'recommendations'=> null,
             ]);
 
             // Analisis AI
             $publicUrl = asset('storage/' . $path);
-            $aiResult = $aiService->analyze($publicUrl, $type);
+            $aiResult  = $aiService->analyze($publicUrl, $type);
 
             // Download overlay + SAVE RECOMMENDATIONS
             if (!empty($aiResult['overlay_image_url'])) {
-                $overlayUrl = $aiResult['overlay_image_url'];
+                $overlayUrl     = $aiResult['overlay_image_url'];
                 $overlayContent = @file_get_contents($overlayUrl);
 
                 if ($overlayContent !== false && strlen($overlayContent) > 1000) {
                     $overlayFilename = 'screenings/' . uniqid('overlay_') . '.png';
                     Storage::disk('public')->put($overlayFilename, $overlayContent);
 
-                    // UPDATE dengan recommendations
                     $screeningImage->update([
-                        'processed_path' => $overlayFilename,
+                        'processed_path'  => $overlayFilename,
                         'recommendations' => $aiResult['recommendations'] ?? [],
                     ]);
                 }
@@ -102,7 +102,7 @@ class ScreeningController extends Controller
             if (!empty($aiResult['crop_images']) && is_array($aiResult['crop_images'])) {
                 foreach ($aiResult['crop_images'] as $crop) {
                     $cropUrl = $crop['url'] ?? null;
-                    $region = $crop['region'] ?? 'unknown';
+                    $region  = $crop['region'] ?? 'unknown';
 
                     if (!$cropUrl) {
                         continue;
@@ -115,18 +115,18 @@ class ScreeningController extends Controller
                         Storage::disk('public')->put($cropFilename, $cropContent);
 
                         ScreeningImage::create([
-                            'screening_id' => $screening->id,
-                            'type' => 'CROP_' . strtoupper($region),
-                            'path' => $cropFilename,
+                            'screening_id'   => $screening->id,
+                            'type'           => 'CROP_' . strtoupper($region),
+                            'path'           => $cropFilename,
                             'processed_path' => null,
-                            'recommendations' => null,
+                            'recommendations'=> null,
                         ]);
                     }
                 }
             }
 
             // Kumpulkan scores untuk average
-            $allScores[] = $aiResult['score'] ?? 0;
+            $allScores[]  = $aiResult['score'] ?? 0;
             $allMetrics[] = $aiResult['metrics'] ?? [];
         }
 
@@ -165,8 +165,8 @@ class ScreeningController extends Controller
         // Update screening
         $summaryFormatter = app(\App\Services\ScreeningSummaryFormatter::class);
         $screening->update([
-            'score' => $avgScore,
-            'category' => $category,
+            'score'   => $avgScore,
+            'category'=> $category,
             'metrics' => $mergedMetrics,
             'summary' => $summaryFormatter->makeSummary($screening),
         ]);
@@ -176,7 +176,7 @@ class ScreeningController extends Controller
         return response()->json($screening, 201);
     }
 
-    // ✅ Detail screening dengan RECOMMENDATIONS (untuk orang tua & fisio)
+    // Detail screening (parent & fisio)
     public function show(Request $request, Screening $screening)
     {
         $user = auth()->user();
@@ -191,11 +191,11 @@ class ScreeningController extends Controller
             }
         }
 
-        // Load relasi child + manual recommendations dari fisio
         $screening->load([
             'child:id,name,birth_date,gender,weight,height',
             'images',
-            'manualRecommendations.physio:id,name'
+            'manualRecommendations.physio:id,name',
+            'physiotherapist:id,name,clinic_name,city,specialty',
         ]);
 
         $child = $screening->child;
@@ -206,14 +206,16 @@ class ScreeningController extends Controller
         return response()->json([
             'success' => true,
             'data' => [
-                'id'          => $screening->id,
-                'score'       => $screening->score,
-                'category'    => $screening->category,
-                'summary'     => $screening->summary,
-                'metrics'     => $screening->metrics,
-                'is_multi_view' => $screening->is_multi_view,
-                'total_views'   => $screening->total_views,
-                'created_at'  => $screening->created_at,
+                'id'              => $screening->id,
+                'score'           => $screening->score,
+                'category'        => $screening->category,
+                'summary'         => $screening->summary,
+                'metrics'         => $screening->metrics,
+                'is_multi_view'   => $screening->is_multi_view,
+                'total_views'     => $screening->total_views,
+                'created_at'      => $screening->created_at,
+                'referral_status' => $screening->referral_status,
+                'physiotherapist' => $screening->physiotherapist,
 
                 'child' => [
                     'id'         => $child->id,
@@ -237,13 +239,47 @@ class ScreeningController extends Controller
                     ];
                 }),
 
-                // ✅ Rekomendasi manual dari fisioterapis
                 'manualRecommendations' => $screening->manualRecommendations,
             ],
         ]);
     }
 
-    // ✅ Simpan rekomendasi manual dari fisioterapis
+    // Parent pilih fisioterapis untuk screening
+    public function referToPhysio(Request $request, Screening $screening)
+    {
+        $user = $request->user();
+
+        if ($screening->user_id !== $user->id) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Unauthorized',
+            ], 403);
+        }
+
+        $data = $request->validate([
+            'physiotherapist_id' => 'required|exists:physiotherapists,id',
+        ]);
+
+        if (!in_array(strtoupper((string)$screening->category), ['ATTENTION', 'FAIR'])) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Screening ini tidak memerlukan rujukan fisioterapis.',
+            ], 422);
+        }
+
+        $screening->update([
+            'physiotherapist_id' => $data['physiotherapist_id'],
+            'referral_status'    => 'requested',
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Rujukan ke fisioterapis berhasil dibuat.',
+            'data'    => $screening->load('physiotherapist'),
+        ]);
+    }
+
+    // Simpan rekomendasi manual
     public function storeRecommendation(Request $request, Screening $screening)
     {
         $validated = $request->validate([
@@ -262,9 +298,6 @@ class ScreeningController extends Controller
             'media_url'    => $validated['media_url'] ?? null,
         ]);
 
-        // Opsional: trigger notifikasi ke parent (bisa pakai event/queue)
-        // event(new PhysioRecommendationCreated($recommendation));
-
         return response()->json([
             'success' => true,
             'message' => 'Rekomendasi berhasil disimpan',
@@ -272,7 +305,6 @@ class ScreeningController extends Controller
         ], 201);
     }
 
-    // ✅ List rekomendasi manual untuk screening tertentu
     public function getRecommendations(Screening $screening)
     {
         $recommendations = $screening->manualRecommendations()
@@ -286,10 +318,9 @@ class ScreeningController extends Controller
         ]);
     }
 
-    // ✅ List screening untuk fisioterapis (semua anak yang perlu perhatian)
+    // (Opsional) physioIndex lama – tidak dipakai untuk dashboard rujukan
     public function physioIndex(Request $request)
     {
-        // Di sini tidak cek user_id, karena fisioterapis bisa lihat semua.
         $screenings = Screening::with(['child.user'])
             ->whereNotNull('category')
             ->where(function ($q) {
@@ -302,13 +333,38 @@ class ScreeningController extends Controller
 
         return response()->json([
             'success' => true,
-            'data' => $screenings->map(function (Screening $s) {
+            'data' => $screenings,
+        ]);
+    }
+
+    // ✅ List referral ke fisioterapis yang login – dipakai dashboard
+    public function myReferrals(Request $request)
+    {
+        $user = $request->user();
+
+        $physio = $user->physiotherapist ?? null;
+        if (!$physio) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Profil fisioterapis tidak ditemukan.',
+            ], 404);
+        }
+
+        $screenings = Screening::with(['child.user'])
+            ->where('physiotherapist_id', $physio->id)
+            ->orderBy('created_at', 'desc')
+            ->get();
+
+        return response()->json([
+            'success' => true,
+            'data'    => $screenings->map(function (Screening $s) {
                 return [
-                    'id'        => $s->id,
-                    'score'     => $s->score,
-                    'category'  => $s->category,
-                    'summary'   => $s->summary,
-                    'created_at'=> $s->created_at,
+                    'id'              => $s->id,
+                    'score'           => $s->score,
+                    'category'        => $s->category,
+                    'summary'         => $s->summary,
+                    'created_at'      => $s->created_at,
+                    'referral_status' => $s->referral_status,
                     'child' => [
                         'id'        => $s->child->id,
                         'name'      => $s->child->name,
@@ -321,6 +377,34 @@ class ScreeningController extends Controller
                     ],
                 ];
             }),
+        ]);
+    }
+
+    // ✅ Fisio update status referral
+    public function updateReferralStatus(Request $request, Screening $screening)
+    {
+        $user = $request->user();
+        $physio = $user->physiotherapist ?? null;
+
+        if (!$physio || $screening->physiotherapist_id !== $physio->id) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Unauthorized',
+            ], 403);
+        }
+
+        $data = $request->validate([
+            'status' => 'required|in:requested,accepted,completed,cancelled',
+        ]);
+
+        $screening->update([
+            'referral_status' => $data['status'],
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Status rujukan diperbarui.',
+            'data'    => $screening,
         ]);
     }
 }

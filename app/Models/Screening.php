@@ -18,6 +18,8 @@ class Screening extends Model
         'summary',
         'is_multi_view',
         'total_views',
+        'physiotherapist_id',
+        'referral_status',
     ];
 
     protected $casts = [
@@ -43,5 +45,11 @@ class Screening extends Model
     public function manualRecommendations()
     {
         return $this->hasMany(ScreeningRecommendation::class);
+    }
+
+    // ✅ Relasi ke fisioterapis yang dipilih orang tua
+    public function physiotherapist()
+    {
+        return $this->belongsTo(Physiotherapist::class, 'physiotherapist_id');
     }
 }
