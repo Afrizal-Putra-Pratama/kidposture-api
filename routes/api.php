@@ -8,6 +8,7 @@ use App\Http\Controllers\Api\ScreeningController;
 use App\Http\Controllers\Api\CategoryApiController;
 use App\Http\Controllers\Api\ArticleApiController;
 use App\Http\Controllers\Api\PhysiotherapistController;
+use App\Http\Controllers\Api\NotificationController; // ⬅️ TAMBAH INI
 
 Route::get('/ping', function () {
     return response()->json(['message' => 'pong']);
@@ -45,6 +46,16 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/physiotherapists',      [PhysiotherapistController::class, 'index']);
     Route::get('/physiotherapists/{id}', [PhysiotherapistController::class, 'show']);
 
+    // Notifications (parent)
+    Route::prefix('notifications')->group(function () {
+        Route::get('/',            [NotificationController::class, 'index']);
+        Route::get('/unread-count',[NotificationController::class, 'unreadCount']);
+        Route::patch('/{id}/read', [NotificationController::class, 'markAsRead']);
+        Route::patch('/read-all',  [NotificationController::class, 'markAllAsRead']);
+        Route::delete('/{id}', [NotificationController::class, 'destroy']);
+        Route::delete('/', [NotificationController::class, 'destroyAll']);
+    });
+
     // Rekomendasi manual (fisio only)
     Route::middleware('role:physio')->group(function () {
         Route::post('/screenings/{screening}/recommendations', [ScreeningController::class, 'storeRecommendation']);
@@ -55,8 +66,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::prefix('physio')
         ->middleware('role:physio')
         ->group(function () {
-            Route::get('/screenings', [ScreeningController::class, 'physioIndex']); // optional
-            Route::get('/referrals',  [ScreeningController::class, 'myReferrals']); // dipakai dashboard
+            Route::get('/screenings', [ScreeningController::class, 'physioIndex']);   // optional
+            Route::get('/referrals',  [ScreeningController::class, 'myReferrals']);   // dipakai dashboard
             Route::patch('/referrals/{screening}/status', [ScreeningController::class, 'updateReferralStatus']);
         });
 });

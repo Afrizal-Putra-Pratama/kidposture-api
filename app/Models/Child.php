@@ -45,4 +45,5 @@ class Child extends Model
         }
         return Carbon::parse($this->birth_date)->age;
     }
+    
 }

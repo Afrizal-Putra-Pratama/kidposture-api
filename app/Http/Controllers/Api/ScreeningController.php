@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Helpers\NotificationHelper;
 use App\Http\Controllers\Controller;
 use App\Models\Child;
 use App\Models\Screening;
@@ -35,14 +36,12 @@ class ScreeningController extends Controller
             return response()->json(['message' => 'Forbidden'], 403);
         }
 
-        // VALIDASI: bisa upload 1-3 foto sekaligus
         $data = $request->validate([
             'images' => 'required|array|min:1|max:3',
             'images.*.type'  => 'required|in:FRONT,SIDE,BACK',
             'images.*.image' => 'required|image|max:5120',
         ]);
 
-        // Buat screening SATU record
         $screening = Screening::create([
             'child_id'           => $child->id,
             'user_id'            => $request->user()->id,
@@ -59,12 +58,10 @@ class ScreeningController extends Controller
         $allScores  = [];
         $allMetrics = [];
 
-        // LOOP setiap foto
         foreach ($data['images'] as $imageData) {
             $file = $imageData['image'];
             $type = $imageData['type'];
 
-            // Simpan original
             $filename  = uniqid('screening_') . '.' . $file->getClientOriginalExtension();
             $directory = 'screenings';
             Storage::disk('public')->put($directory . '/' . $filename, file_get_contents($file->getPathname()));
@@ -78,11 +75,9 @@ class ScreeningController extends Controller
                 'recommendations'=> null,
             ]);
 
-            // Analisis AI
             $publicUrl = asset('storage/' . $path);
             $aiResult  = $aiService->analyze($publicUrl, $type);
 
-            // Download overlay + SAVE RECOMMENDATIONS
             if (!empty($aiResult['overlay_image_url'])) {
                 $overlayUrl     = $aiResult['overlay_image_url'];
                 $overlayContent = @file_get_contents($overlayUrl);
@@ -98,7 +93,6 @@ class ScreeningController extends Controller
                 }
             }
 
-            // Download crops
             if (!empty($aiResult['crop_images']) && is_array($aiResult['crop_images'])) {
                 foreach ($aiResult['crop_images'] as $crop) {
                     $cropUrl = $crop['url'] ?? null;
@@ -125,15 +119,12 @@ class ScreeningController extends Controller
                 }
             }
 
-            // Kumpulkan scores untuk average
             $allScores[]  = $aiResult['score'] ?? 0;
             $allMetrics[] = $aiResult['metrics'] ?? [];
         }
 
-        // HITUNG AVERAGE SCORE
         $avgScore = count($allScores) > 0 ? array_sum($allScores) / count($allScores) : 0;
 
-        // Tentukan category based on avg
         if ($avgScore >= 85) {
             $category = 'GOOD';
         } elseif ($avgScore >= 70) {
@@ -142,7 +133,6 @@ class ScreeningController extends Controller
             $category = 'ATTENTION';
         }
 
-        // Merge metrics (ambil average juga)
         $mergedMetrics = [];
         if (count($allMetrics) > 0) {
             $keys = [
@@ -162,7 +152,6 @@ class ScreeningController extends Controller
             $mergedMetrics['raw_score'] = $avgScore;
         }
 
-        // Update screening
         $summaryFormatter = app(\App\Services\ScreeningSummaryFormatter::class);
         $screening->update([
             'score'   => $avgScore,
@@ -181,7 +170,6 @@ class ScreeningController extends Controller
     {
         $user = auth()->user();
 
-        // Authorization: fisio bisa lihat semua, parent hanya miliknya
         if (strtolower($user->role) !== 'physio') {
             if ($screening->user_id !== $user->id) {
                 return response()->json([
@@ -279,7 +267,7 @@ class ScreeningController extends Controller
         ]);
     }
 
-    // Simpan rekomendasi manual
+    // Simpan rekomendasi manual + notifikasi
     public function storeRecommendation(Request $request, Screening $screening)
     {
         $validated = $request->validate([
@@ -297,6 +285,14 @@ class ScreeningController extends Controller
             'content'      => $validated['content'],
             'media_url'    => $validated['media_url'] ?? null,
         ]);
+
+        // 🔔 Notifikasi ke parent
+        NotificationHelper::sendToParent(
+            $screening->id,
+            'new_recommendation',
+            'Rekomendasi Baru',
+            'Fisioterapis telah menambahkan rekomendasi: ' . $validated['title']
+        );
 
         return response()->json([
             'success' => true,
@@ -318,7 +314,7 @@ class ScreeningController extends Controller
         ]);
     }
 
-    // (Opsional) physioIndex lama – tidak dipakai untuk dashboard rujukan
+    // (Opsional) physioIndex lama
     public function physioIndex(Request $request)
     {
         $screenings = Screening::with(['child.user'])
@@ -337,7 +333,7 @@ class ScreeningController extends Controller
         ]);
     }
 
-    // ✅ List referral ke fisioterapis yang login – dipakai dashboard
+    // List referral ke fisioterapis yang login – dipakai dashboard
     public function myReferrals(Request $request)
     {
         $user = $request->user();
@@ -380,7 +376,7 @@ class ScreeningController extends Controller
         ]);
     }
 
-    // ✅ Fisio update status referral
+    // Fisio update status referral + notifikasi
     public function updateReferralStatus(Request $request, Screening $screening)
     {
         $user = $request->user();
@@ -400,6 +396,28 @@ class ScreeningController extends Controller
         $screening->update([
             'referral_status' => $data['status'],
         ]);
+
+        // 🔔 Notifikasi ke parent sesuai status
+        if (in_array($data['status'], ['accepted', 'completed'])) {
+            $type = $data['status'] === 'accepted'
+                ? 'referral_accepted'
+                : 'referral_completed';
+
+            $title = $data['status'] === 'accepted'
+                ? 'Rujukan Diterima'
+                : 'Konsultasi Selesai';
+
+            $message = $data['status'] === 'accepted'
+                ? 'Fisioterapis telah menerima rujukan screening untuk anak Anda.'
+                : 'Fisioterapis telah menyelesaikan konsultasi untuk anak Anda. Silakan cek rekomendasi terbaru.';
+
+            NotificationHelper::sendToParent(
+                $screening->id,
+                $type,
+                $title,
+                $message
+            );
+        }
 
         return response()->json([
             'success' => true,
