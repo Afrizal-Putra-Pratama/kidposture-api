@@ -2,53 +2,76 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Physiotherapist extends Model
 {
+    use HasFactory;
+
     protected $fillable = [
         'user_id',
         'name',
+        'email',
+        'phone',
         'clinic_name',
         'city',
+        'address',
+        'latitude',
+        'longitude',
         'specialty',
-        'experience_years',
-        'phone',
-        'email',
-        'photo_url',
-        'bio_short',
+        'bio',
+        'photo',
+        'practice_hours',
+        'consultation_fee',
         'is_accepting_consultations',
-
-        // field tambahan
+        'status',
         'certificate_path',
+        'verified_at',
         'is_verified',
         'is_active',
     ];
 
     protected $casts = [
         'is_accepting_consultations' => 'boolean',
-        'is_verified' => 'boolean',
-        'is_active' => 'boolean',
-        'experience_years' => 'integer',
+        'practice_hours'             => 'array',
+        'verified_at'                => 'datetime',
+        'is_verified'                => 'boolean',
+        'is_active'                  => 'boolean',
     ];
 
-    public function user(): BelongsTo
+    protected $appends = [
+        'photo_url',
+        'certificate_url',
+    ];
+
+    public function user()
     {
         return $this->belongsTo(User::class);
     }
 
-    // URL foto profil (kalau nanti ganti ke storage path bisa diubah di sini)
-    public function getPhotoUrlAttribute($value): ?string
+    public function screenings()
     {
-        return $value ?: null;
+        return $this->hasMany(Screening::class, 'physiotherapist_id');
     }
 
-    // URL sertifikat (untuk admin; asumsikan disimpan di storage/public)
-    public function getCertificateUrlAttribute(): ?string
+    // ✅ URL foto
+    public function getPhotoUrlAttribute()
     {
-        return $this->certificate_path
-            ? asset('storage/' . $this->certificate_path)
-            : null;
+        if (!$this->photo) {
+            return null;
+        }
+
+        return asset('storage/'.$this->photo);
+    }
+
+    // ✅ URL sertifikat
+    public function getCertificateUrlAttribute()
+    {
+        if (!$this->certificate_path) {
+            return null;
+        }
+
+        return asset('storage/'.$this->certificate_path);
     }
 }

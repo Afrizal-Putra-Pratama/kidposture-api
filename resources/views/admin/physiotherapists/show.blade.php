@@ -15,12 +15,25 @@
     <div class="card mb-4">
         <div class="card-body">
             <h3>{{ $physiotherapist->name }}</h3>
-            <p class="mb-1"><strong>Klinik:</strong> {{ $physiotherapist->clinic_name }}</p>
-            <p class="mb-1"><strong>Kota:</strong> {{ $physiotherapist->city }}</p>
-            <p class="mb-1"><strong>Spesialisasi:</strong> {{ $physiotherapist->specialty }}</p>
-            <p class="mb-1"><strong>Pengalaman:</strong> {{ $physiotherapist->experience_years ?? '-' }} tahun</p>
-            <p class="mb-1"><strong>Telepon:</strong> {{ $physiotherapist->phone }}</p>
-            <p class="mb-1"><strong>Email:</strong> {{ $physiotherapist->email }}</p>
+
+            <p class="mb-1">
+                <strong>Klinik:</strong> {{ $physiotherapist->clinic_name ?? '-' }}
+            </p>
+            <p class="mb-1">
+                <strong>Kota:</strong> {{ $physiotherapist->city ?? '-' }}
+            </p>
+            <p class="mb-1">
+                <strong>Spesialisasi:</strong> {{ $physiotherapist->specialty ?? '-' }}
+            </p>
+            <p class="mb-1">
+                <strong>Pengalaman:</strong> {{ $physiotherapist->experience_years ?? '-' }} tahun
+            </p>
+            <p class="mb-1">
+                <strong>Telepon:</strong> {{ $physiotherapist->phone ?? '-' }}
+            </p>
+            <p class="mb-1">
+                <strong>Email:</strong> {{ $physiotherapist->email ?? ($physiotherapist->user->email ?? '-') }}
+            </p>
 
             <p class="mt-3">
                 <strong>Status:</strong>
@@ -40,6 +53,9 @@
             @if ($physiotherapist->bio_short)
                 <hr>
                 <p>{{ $physiotherapist->bio_short }}</p>
+            @elseif ($physiotherapist->bio)
+                <hr>
+                <p>{{ $physiotherapist->bio }}</p>
             @endif
 
             @if ($physiotherapist->photo_url)
@@ -48,7 +64,7 @@
                 <img src="{{ $physiotherapist->photo_url }}" alt="Foto" style="max-width: 200px;">
             @endif
 
-            @if ($physiotherapist->certificate_url ?? false)
+            @if ($physiotherapist->certificate_url)
                 <hr>
                 <p><strong>Sertifikat:</strong></p>
                 <a href="{{ $physiotherapist->certificate_url }}" target="_blank" class="btn btn-outline-secondary btn-sm">
