@@ -13,7 +13,6 @@ class ArticleCategory extends Model
         'name',
         'slug',
         'description',
-        'icon',
         'order'
     ];
 
