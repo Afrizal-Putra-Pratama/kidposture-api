@@ -11,6 +11,7 @@ use App\Http\Controllers\Api\PhysiotherapistController;
 use App\Http\Controllers\Api\NotificationController;
 use App\Http\Controllers\Api\PhysioProfileController;
 use App\Http\Controllers\Api\AdminPhysioController;
+use App\Http\Controllers\Api\PhysioArticleController;
 
 Route::get('/ping', function () {
     return response()->json(['message' => 'pong']);
@@ -73,6 +74,9 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/screenings', [ScreeningController::class, 'physioIndex']);
         Route::get('/referrals', [ScreeningController::class, 'myReferrals']);
         Route::patch('/referrals/{screening}/status', [ScreeningController::class, 'updateReferralStatus']);
+
+        // Article Management
+        Route::apiResource('articles', PhysioArticleController::class);
     });
 
     // Admin-only routes

@@ -1,4 +1,5 @@
 <?php
+// app/Models/ArticleCategory.php
 
 namespace App\Models;
 

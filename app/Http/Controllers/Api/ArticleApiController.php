@@ -10,56 +10,63 @@ class ArticleApiController extends Controller
 {
     public function index(Request $request)
     {
+        $perPage = $request->get('per_page', 12);
+
         $query = Article::with(['category', 'author'])
             ->where('is_published', true)
-            ->latest('published_at');
+            ->orderByDesc('published_at')
+            ->orderByDesc('created_at');
 
-        // Filter by category
-        if ($request->has('category_id')) {
+        // filter kategori
+        if ($request->filled('category_id')) {
             $query->where('category_id', $request->category_id);
         }
 
-        // Search
-        if ($request->has('search')) {
+        // search
+        if ($request->filled('search')) {
             $search = $request->search;
-            $query->where(function($q) use ($search) {
+            $query->where(function ($q) use ($search) {
                 $q->where('title', 'like', "%{$search}%")
                   ->orWhere('excerpt', 'like', "%{$search}%");
             });
         }
 
-        $articles = $query->paginate(12);
+        $paginator = $query->paginate($perPage);
+
+        $data = $paginator->getCollection()->map(function (Article $article) {
+            return [
+                'id' => $article->id,
+                'title' => $article->title,
+                'slug' => $article->slug,
+                'excerpt' => $article->excerpt,
+                'thumbnail' => $article->thumbnail_url, // ← pakai accessor (full URL bersih)
+                'read_time' => $article->read_time,
+                'views' => $article->views,
+                'published_at' => $article->published_at
+                    ? $article->published_at->format('d M Y')
+                    : null,
+                'category' => $article->category ? [
+                    'id' => $article->category->id,
+                    'name' => $article->category->name,
+                    'slug' => $article->category->slug,
+                    'icon' => $article->category->icon,
+                ] : null,
+                'author' => $article->author ? [
+                    'id' => $article->author->id,
+                    'name' => $article->author->name,
+                ] : null,
+            ];
+        });
 
         return response()->json([
             'success' => true,
-            'data' => $articles->map(function($article) {
-                return [
-                    'id' => $article->id,
-                    'title' => $article->title,
-                    'slug' => $article->slug,
-                    'excerpt' => $article->excerpt,
-                    'thumbnail' => $article->thumbnail ? asset('storage/' . $article->thumbnail) : null,
-                    'read_time' => $article->read_time,
-                    'views' => $article->views,
-                    'published_at' => $article->published_at->format('d M Y'),
-                    'category' => [
-                        'id' => $article->category->id,
-                        'name' => $article->category->name,
-                        'slug' => $article->category->slug,
-                        'icon' => $article->category->icon,
-                    ],
-                    'author' => [
-                        'id' => $article->author->id,
-                        'name' => $article->author->name,
-                    ]
-                ];
-            }),
+            'data' => $data,
             'pagination' => [
-                'current_page' => $articles->currentPage(),
-                'last_page' => $articles->lastPage(),
-                'per_page' => $articles->perPage(),
-                'total' => $articles->total(),
-            ]
+                'current_page' => $paginator->currentPage(),
+                'last_page' => $paginator->lastPage(),
+                'per_page' => $paginator->perPage(),
+                'total' => $paginator->total(),
+            ],
         ]);
     }
 
@@ -68,16 +75,8 @@ class ArticleApiController extends Controller
         $article = Article::with(['category', 'author'])
             ->where('slug', $slug)
             ->where('is_published', true)
-            ->first();
+            ->firstOrFail();
 
-        if (!$article) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Article not found'
-            ], 404);
-        }
-
-        // Increment views
         $article->increment('views');
 
         return response()->json([
@@ -88,21 +87,23 @@ class ArticleApiController extends Controller
                 'slug' => $article->slug,
                 'excerpt' => $article->excerpt,
                 'content' => $article->content,
-                'thumbnail' => $article->thumbnail ? asset('storage/' . $article->thumbnail) : null,
+                'thumbnail' => $article->thumbnail_url,
                 'read_time' => $article->read_time,
                 'views' => $article->views,
-                'published_at' => $article->published_at->format('d M Y, H:i'),
-                'category' => [
+                'published_at' => $article->published_at
+                    ? $article->published_at->format('d M Y')
+                    : null,
+                'category' => $article->category ? [
                     'id' => $article->category->id,
                     'name' => $article->category->name,
                     'slug' => $article->category->slug,
                     'icon' => $article->category->icon,
-                ],
-                'author' => [
+                ] : null,
+                'author' => $article->author ? [
                     'id' => $article->author->id,
                     'name' => $article->author->name,
-                ]
-            ]
+                ] : null,
+            ],
         ]);
     }
 }
