@@ -29,7 +29,7 @@ class ScreeningController extends Controller
         return response()->json($screenings);
     }
 
-    // Buat screening baru + upload + overlay + crops + recommendations
+    // Buat screening baru + upload + overlay + crops
     public function store(Request $request, Child $child, PostureAiService $aiService)
     {
         if ($child->user_id !== $request->user()->id) {
@@ -78,6 +78,7 @@ class ScreeningController extends Controller
             $publicUrl = asset('storage/' . $path);
             $aiResult  = $aiService->analyze($publicUrl, $type);
 
+            // overlay image
             if (!empty($aiResult['overlay_image_url'])) {
                 $overlayUrl     = $aiResult['overlay_image_url'];
                 $overlayContent = @file_get_contents($overlayUrl);
@@ -88,11 +89,12 @@ class ScreeningController extends Controller
 
                     $screeningImage->update([
                         'processed_path'  => $overlayFilename,
-                        'recommendations' => $aiResult['recommendations'] ?? [],
+                        'recommendations' => null,
                     ]);
                 }
             }
 
+            // crop images
             if (!empty($aiResult['crop_images']) && is_array($aiResult['crop_images'])) {
                 foreach ($aiResult['crop_images'] as $crop) {
                     $cropUrl = $crop['url'] ?? null;
@@ -133,31 +135,45 @@ class ScreeningController extends Controller
             $category = 'ATTENTION';
         }
 
+        // ✅ PERBAIKAN: sesuaikan dengan field yang BENAR-BENAR dikirim Python
         $mergedMetrics = [];
         if (count($allMetrics) > 0) {
             $keys = [
-                'shoulder_tilt_index',
-                'hip_tilt_index',
-                'forward_head_index',
-                'neck_inclination_deg',
-                'torso_inclination_deg',
+                'shoulder_tilt_index',     // dari Python
+                'hip_tilt_index',          // dari Python
+                'forward_head_index',      // dari Python
+                'neck_inclination_deg',    // dari Python
+                'torso_inclination_deg',   // dari Python
             ];
 
             foreach ($keys as $key) {
-                $values = array_filter(array_column($allMetrics, $key));
+                $values = array_filter(array_column($allMetrics, $key), function($v) {
+                    return $v !== null && $v !== '';
+                });
                 if (count($values) > 0) {
                     $mergedMetrics[$key] = array_sum($values) / count($values);
                 }
             }
             $mergedMetrics['raw_score'] = $avgScore;
+            
+            // Simpan juga findings kalau ada
+            $allFindings = [];
+            foreach ($allMetrics as $m) {
+                if (!empty($m['findings']) && is_array($m['findings'])) {
+                    $allFindings = array_merge($allFindings, $m['findings']);
+                }
+            }
+            if (count($allFindings) > 0) {
+                $mergedMetrics['findings'] = $allFindings;
+            }
         }
 
         $summaryFormatter = app(\App\Services\ScreeningSummaryFormatter::class);
         $screening->update([
-            'score'   => $avgScore,
-            'category'=> $category,
-            'metrics' => $mergedMetrics,
-            'summary' => $summaryFormatter->makeSummary($screening),
+            'score'    => $avgScore,
+            'category' => $category,
+            'metrics'  => $mergedMetrics,
+            'summary'  => $summaryFormatter->makeSummary($screening),
         ]);
 
         $screening->load('images', 'child');
@@ -286,7 +302,6 @@ class ScreeningController extends Controller
             'media_url'    => $validated['media_url'] ?? null,
         ]);
 
-        // 🔔 Notifikasi ke parent
         NotificationHelper::sendToParent(
             $screening->id,
             'new_recommendation',
@@ -379,7 +394,7 @@ class ScreeningController extends Controller
     // Fisio update status referral + notifikasi
     public function updateReferralStatus(Request $request, Screening $screening)
     {
-        $user = $request->user();
+        $user   = $request->user();
         $physio = $user->physiotherapist ?? null;
 
         if (!$physio || $screening->physiotherapist_id !== $physio->id) {
@@ -397,7 +412,6 @@ class ScreeningController extends Controller
             'referral_status' => $data['status'],
         ]);
 
-        // 🔔 Notifikasi ke parent sesuai status
         if (in_array($data['status'], ['accepted', 'completed'])) {
             $type = $data['status'] === 'accepted'
                 ? 'referral_accepted'

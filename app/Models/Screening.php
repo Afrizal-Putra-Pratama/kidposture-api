@@ -41,13 +41,13 @@ class Screening extends Model
         return $this->hasMany(ScreeningImage::class);
     }
 
-    // ✅ Relasi ke rekomendasi manual fisioterapis
+    // Relasi ke rekomendasi manual fisioterapis
     public function manualRecommendations()
     {
         return $this->hasMany(ScreeningRecommendation::class);
     }
 
-    // ✅ Relasi ke fisioterapis yang dipilih orang tua
+    // Relasi ke fisioterapis yang dipilih orang tua
     public function physiotherapist()
     {
         return $this->belongsTo(Physiotherapist::class, 'physiotherapist_id');
