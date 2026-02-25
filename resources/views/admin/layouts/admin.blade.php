@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>@yield('title', 'Admin') - Posturely</title>
     
+    <link rel="icon" type="image/svg+xml" href="{{ asset('images/logo-favicon-posturely.svg') }}">
+    
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
     
@@ -23,50 +25,52 @@
         
         <aside class="admin-sidebar" id="adminSidebar">
             <div class="admin-sidebar__header">
-                <a href="{{ route('admin.dashboard') }}" class="landing-logo">
-                    Posturely
-                    <span class="landing-logo__dot"></span>
+                <a href="{{ route('admin.dashboard') }}" class="sidebar-brand-logo">
+                    <img src="{{ asset('images/logo-posturely.svg') }}" alt="Posturely Logo" style="height: 38px; width: auto; max-width: 150px; object-fit: contain;">
                 </a>
+                
                 <button class="sidebar-toggle-btn" id="closeSidebarBtn" title="Close Menu">
                     <i class="bi bi-list"></i>
                 </button>
             </div>
 
             <nav class="admin-nav">
-    <a href="{{ route('admin.dashboard') }}" class="admin-nav__link {{ request()->routeIs('admin.dashboard') ? 'active' : '' }}">
-        <i class="bi bi-speedometer2"></i> Dashboard
-    </a>
+                <a href="{{ route('admin.dashboard') }}" class="admin-nav__link {{ request()->routeIs('admin.dashboard') ? 'active' : '' }}">
+                    <i class="bi bi-speedometer2"></i> Dashboard
+                </a>
 
-    <a href="{{ route('admin.articles.index') }}" class="admin-nav__link {{ request()->routeIs('admin.articles.*') ? 'active' : '' }}">
-        <i class="bi bi-file-earmark-text"></i> Articles
-    </a>
+                <a href="{{ route('admin.articles.index') }}" class="admin-nav__link {{ request()->routeIs('admin.articles.*') ? 'active' : '' }}">
+                    <i class="bi bi-file-earmark-text"></i> Articles
+                </a>
 
-    <a href="{{ route('admin.categories.index') }}" class="admin-nav__link {{ request()->routeIs('admin.categories.*') ? 'active' : '' }}">
-        <i class="bi bi-tags"></i> Categories
-    </a>
+                <a href="{{ route('admin.categories.index') }}" class="admin-nav__link {{ request()->routeIs('admin.categories.*') ? 'active' : '' }}">
+                    <i class="bi bi-tags"></i> Categories
+                </a>
 
-    <a href="{{ route('admin.physiotherapists.index') }}" class="admin-nav__link {{ request()->routeIs('admin.physiotherapists.*') ? 'active' : '' }}">
-        <i class="bi bi-hospital"></i> Physiotherapists
-    </a>
+                <a href="{{ route('admin.physiotherapists.index') }}" class="admin-nav__link {{ request()->routeIs('admin.physiotherapists.*') ? 'active' : '' }}">
+                    <i class="bi bi-hospital"></i> Physiotherapists
+                </a>
 
-    <a href="{{ route('admin.users.index') }}" class="admin-nav__link {{ request()->routeIs('admin.users.*') ? 'active' : '' }}">
-        <i class="bi bi-people"></i> Users
-    </a>
+                <a href="{{ route('admin.users.index') }}" class="admin-nav__link {{ request()->routeIs('admin.users.*') ? 'active' : '' }}">
+                    <i class="bi bi-people"></i> Users
+                </a>
 
-    <div class="admin-nav__divider"></div>
+                <div class="admin-nav__divider"></div>
 
-    <form action="{{ route('logout') }}" method="POST" class="admin-nav__form">
-        @csrf
-        <button type="submit" class="admin-nav__link admin-nav__link--danger" style="width: 100%; text-align: left;">
-            <i class="bi bi-box-arrow-right"></i> Logout
-        </button>
-    </form>
-</nav>
+                <form action="{{ route('logout') }}" method="POST" class="admin-nav__form">
+                    @csrf
+                    <button type="submit" class="admin-nav__link admin-nav__link--danger" style="width: 100%; text-align: left;">
+                        <i class="bi bi-box-arrow-right"></i> Logout
+                    </button>
+                </form>
+            </nav>
         </aside>
 
         <div class="admin-main">
             
             <header class="admin-topbar">
+                <div class="admin-topbar__spacer"></div>
+                
                 <div class="user-menu">
                     <button class="user-menu__toggle">
                         <i class="bi bi-person-circle"></i> 
@@ -107,10 +111,11 @@
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             const layout = document.getElementById('adminLayout');
-            const closeBtn = document.getElementById('closeSidebarBtn'); // Tombol di DALAM sidebar
-            const openBtn = document.getElementById('openSidebarBtn');   // Tombol melayang di luar sidebar
+            const closeBtn = document.getElementById('closeSidebarBtn'); 
+            const openBtn = document.getElementById('openSidebarBtn');   
             const overlay = document.getElementById('sidebarOverlay');
 
+            // Fungsi Inti Toggle
             function toggleSidebar() {
                 if (window.innerWidth <= 1024) {
                     layout.classList.toggle('mobile-active');
@@ -119,18 +124,18 @@
                 }
             }
 
-            // Saat tombol di dalam sidebar ditekan
+            // Saat Tombol (Di Dalam Sidebar) Diklik
             closeBtn.addEventListener('click', toggleSidebar);
             
-            // Saat tombol melayang (hamburger) ditekan
+            // Saat Tombol Floating (Di Luar Sidebar) Diklik
             openBtn.addEventListener('click', toggleSidebar);
 
-            // Menutup menu jika area gelap (overlay) di-klik di HP
+            // Saat Overlay Gelap (Di Mobile) Diklik
             overlay.addEventListener('click', function() {
                 layout.classList.remove('mobile-active');
             });
 
-            // Reset status saat layar di-resize (misal muter layar HP/Tablet)
+            // Handle Resize
             window.addEventListener('resize', function() {
                 if (window.innerWidth > 1024) {
                     layout.classList.remove('mobile-active');

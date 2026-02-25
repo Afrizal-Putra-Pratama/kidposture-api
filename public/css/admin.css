@@ -66,41 +66,35 @@ body.admin-body {
   transition: transform 0.3s ease, margin-left 0.3s ease;
 }
 
-/* Header Sidebar di mana Logo dan Hamburger berada */
+/* Header Sidebar (Logo & Tombol Hamburger) */
 .admin-sidebar__header {
   height: 70px;
-  padding: 0 1rem; /* Disesuaikan agar muat dengan tombol */
+  padding: 0 1rem 0 0.5rem; /* Padding kiri lebih besar untuk logo */
   display: flex;
   align-items: center;
-  justify-content: space-between; /* Membuat Logo di kiri, Hamburger di kanan */
+  justify-content: space-between;
   border-bottom: 1px solid var(--gray-200);
 }
 
-.landing-logo {
-  display: inline-flex;
+/* Memastikan Logo Aman dan Tidak Meledak */
+.sidebar-brand-logo {
+  display: flex;
   align-items: center;
-  gap: 0.5rem;
-  font-weight: 700;
-  font-size: 1.3rem;
-  color: var(--primary);
-  transition: opacity 0.2s ease;
   text-decoration: none;
+  overflow: hidden;
+  height: 100%;
 }
 
-.landing-logo__dot {
-  width: 10px;
-  height: 10px;
-  border-radius: 999px;
-  background: linear-gradient(135deg, var(--accent), #38bdf8);
-  animation: pulse 2s ease-in-out infinite;
+.sidebar-brand-logo img {
+  height: 150px !important; 
+  max-height: 150px !important;
+  width: auto !important;
+  max-width: 200px !important;
+  display: block !important;
+  object-fit: contain !important;
 }
 
-@keyframes pulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.6; }
-}
-
-/* Tombol Hamburger di DALAM Sidebar Header */
+/* Tombol Hamburger di DALAM Sidebar */
 .sidebar-toggle-btn {
   background: transparent;
   border: none;
@@ -160,7 +154,7 @@ body.admin-body {
   transition: width 0.3s ease;
 }
 
-/* Topbar Utama yang kini bersih tanpa hamburger */
+/* Topbar Utama yang KINI BERSIH (Tanpa Hamburger) */
 .admin-topbar {
   height: 70px;
   background: var(--white);
@@ -240,69 +234,78 @@ body.admin-body {
 /* =========================================
    RESPONSIVE SIDEBAR LOGIC
    ========================================= */
-/* Tombol Hamburger di luar Sidebar (Muncul saat Sidebar ketutup di PC) */
+
+/* Tombol Floating di LUAR Sidebar (Muncul saat Sidebar ketutup) */
 .floating-toggle-btn {
-    display: none; /* Default hidden */
-    position: fixed;
-    top: 15px;
-    left: 15px;
-    z-index: 1000;
-    background: var(--white);
-    border: 1px solid var(--gray-200);
-    border-radius: 8px;
-    padding: 0.5rem;
-    cursor: pointer;
-    font-size: 1.5rem;
-    color: var(--gray-700);
-    box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+  display: none; /* Default hidden */
+  position: fixed;
+  top: 15px;
+  left: 15px;
+  z-index: 1000;
+  background: var(--white);
+  border: 1px solid var(--gray-200);
+  border-radius: 8px;
+  padding: 0.4rem 0.6rem;
+  cursor: pointer;
+  font-size: 1.5rem;
+  color: var(--gray-700);
+  box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+  transition: all 0.2s ease;
 }
 
+.floating-toggle-btn:hover {
+  color: var(--accent);
+  background: var(--gray-50);
+}
+
+/* LOGIKA DESKTOP (> 1024px) */
 @media (min-width: 1025px) {
-    .admin-layout.desktop-collapsed .admin-sidebar {
-        margin-left: -260px; /* Menyembunyikan sidebar ke kiri */
-    }
-    
-    /* Munculkan tombol floating di pojok kiri atas saat sidebar ditarik ke kiri */
-    .admin-layout.desktop-collapsed .floating-toggle-btn {
-        display: block;
-    }
+  .admin-layout.desktop-collapsed .admin-sidebar {
+      margin-left: -260px; /* Menyembunyikan sidebar ke kiri */
+  }
+  
+  /* Munculkan tombol floating di pojok kiri atas saat sidebar ditarik ke kiri */
+  .admin-layout.desktop-collapsed .floating-toggle-btn {
+      display: block;
+  }
 }
 
+/* LOGIKA MOBILE/TABLET (<= 1024px) */
 @media (max-width: 1024px) {
-    .admin-sidebar {
-        position: fixed;
-        top: 0;
-        bottom: 0;
-        left: 0;
-        transform: translateX(-100%);
-    }
-    
-    .admin-layout.mobile-active .admin-sidebar {
-        transform: translateX(0);
-    }
-    
-    .admin-layout.mobile-active .sidebar-overlay {
-        opacity: 1;
-        visibility: visible;
-    }
-    
-    /* Tombol floating SELALU muncul di Mobile jika sidebar belum dibuka */
-    .floating-toggle-btn {
-        display: block;
-    }
-    
-    /* Sembunyikan floating button saat sidebar terbuka di HP, karena udah ada tombol di dalam sidebar */
-    .admin-layout.mobile-active .floating-toggle-btn {
-        display: none;
-    }
-    
-    .admin-content {
-        padding: 1.5rem 1rem;
-    }
-    
-    .user-name-text {
-        display: none;
-    }
+  .admin-sidebar {
+      position: fixed;
+      top: 0;
+      bottom: 0;
+      left: 0;
+      transform: translateX(-100%);
+  }
+  
+  .admin-layout.mobile-active .admin-sidebar {
+      transform: translateX(0);
+  }
+  
+  .admin-layout.mobile-active .sidebar-overlay {
+      opacity: 1;
+      visibility: visible;
+  }
+  
+  /* Tombol floating SELALU muncul di Mobile jika sidebar belum dibuka */
+  .floating-toggle-btn {
+      display: block;
+  }
+  
+  /* Sembunyikan floating button saat sidebar terbuka di HP */
+  .admin-layout.mobile-active .floating-toggle-btn {
+      display: none;
+  }
+  
+  .admin-content {
+      padding: 1.5rem 1rem;
+  }
+  
+  .user-name-text {
+      display: none;
+  }
 }
 
 /* =========================================
