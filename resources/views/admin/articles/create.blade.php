@@ -1,16 +1,16 @@
 @extends('admin.layouts.admin')
 
-
 @section('title', 'Create Article')
 
 @push('styles')
-<link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
+    <link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
+    <link rel="stylesheet" href="{{ asset('css/article-form.css') }}">
 @endpush
 
 @section('content')
-<div class="d-flex justify-content-between align-items-center mb-4">
-    <h2><i class="bi bi-plus-circle"></i> Create Article</h2>
-    <a href="{{ route('admin.articles.index') }}" class="btn btn-secondary">
+<div class="page-header">
+    <h2 class="page-title"><i class="bi bi-plus-circle"></i> Create Article</h2>
+    <a href="{{ route('admin.articles.index') }}" class="btn btn--secondary">
         <i class="bi bi-arrow-left"></i> Back to List
     </a>
 </div>
@@ -18,147 +18,101 @@
 <form action="{{ route('admin.articles.store') }}" method="POST" enctype="multipart/form-data" id="articleForm">
     @csrf
     
-    <div class="row">
-        <div class="col-lg-8">
+    <div class="content-grid">
+        <div class="content-main">
             <div class="card">
-                <div class="card-header bg-white">
-                    <h5 class="mb-0">Article Content</h5>
+                <div class="card__header">
+                    <i class="bi bi-layout-text-window"></i> Article Content
                 </div>
-                <div class="card-body">
-                    <!-- Title -->
-                    <div class="mb-3">
-                        <label for="title" class="form-label">Title <span class="text-danger">*</span></label>
-                        <input type="text" 
-                               class="form-control @error('title') is-invalid @enderror" 
-                               id="title" 
-                               name="title" 
-                               value="{{ old('title') }}" 
-                               required>
-                        @error('title')
-                            <div class="invalid-feedback">{{ $message }}</div>
-                        @enderror
-                    </div>
+                
+                <div class="form-group">
+                    <label for="title" class="form-label">Title <span class="text-danger">*</span></label>
+                    <input type="text" class="form-input @error('title') is-invalid @enderror" id="title" name="title" value="{{ old('title') }}" placeholder="Enter an engaging title..." required autofocus>
+                    @error('title') <span class="form-text-error">{{ $message }}</span> @enderror
+                </div>
 
-                    <!-- Excerpt -->
-                    <div class="mb-3">
-                        <label for="excerpt" class="form-label">Excerpt</label>
-                        <textarea class="form-control @error('excerpt') is-invalid @enderror" 
-                                  id="excerpt" 
-                                  name="excerpt" 
-                                  rows="3" 
-                                  placeholder="Short description (optional)">{{ old('excerpt') }}</textarea>
-                        @error('excerpt')
-                            <div class="invalid-feedback">{{ $message }}</div>
-                        @enderror
-                        <small class="text-muted">Max 500 characters</small>
-                    </div>
+                <div class="form-group">
+                    <label for="excerpt" class="form-label">Excerpt</label>
+                    <textarea class="form-textarea @error('excerpt') is-invalid @enderror" id="excerpt" name="excerpt" rows="3" placeholder="Write a short, engaging description (optional)">{{ old('excerpt') }}</textarea>
+                    <span class="form-text-muted">Max 500 characters. This will appear on article cards.</span>
+                    @error('excerpt') <span class="form-text-error">{{ $message }}</span> @enderror
+                </div>
 
-                    <!-- Content Editor -->
-                    <div class="mb-3">
-                        <label for="content" class="form-label">Content <span class="text-danger">*</span></label>
-                        <div id="quillEditor" style="height: 400px;"></div>
-                        <input type="hidden" name="content" id="contentInput" value="{{ old('content') }}">
-                        @error('content')
-                            <div class="text-danger small mt-2">{{ $message }}</div>
-                        @enderror
-                    </div>
+                <div class="form-group" style="margin-bottom: 0;">
+                    <label for="content" class="form-label">Content <span class="text-danger">*</span></label>
+                    <div id="quillEditor"></div>
+                    <input type="hidden" name="content" id="contentInput" value="{{ old('content') }}">
+                    @error('content') <span class="form-text-error">{{ $message }}</span> @enderror
                 </div>
             </div>
         </div>
 
-        <div class="col-lg-4">
-            <div class="card mb-3">
-                <div class="card-header bg-white">
-                    <h5 class="mb-0">Publish</h5>
+        <div class="content-sidebar">
+            
+            <div class="card" style="margin-bottom: 1.5rem;">
+                <div class="card__header">
+                    <i class="bi bi-tags"></i> Category
                 </div>
-                <div class="card-body">
-                    <!-- Publish Status -->
-                    <div class="mb-3">
-                        <div class="form-check form-switch">
-                            <input class="form-check-input" 
-                                   type="checkbox" 
-                                   id="is_published" 
-                                   name="is_published" 
-                                   value="1"
-                                   {{ old('is_published') ? 'checked' : '' }}>
-                            <label class="form-check-label" for="is_published">
-                                Publish immediately
-                            </label>
-                        </div>
-                    </div>
-
-                    <!-- Read Time -->
-                    <div class="mb-3">
-                        <label for="read_time" class="form-label">Read Time (minutes)</label>
-                        <input type="number" 
-                               class="form-control @error('read_time') is-invalid @enderror" 
-                               id="read_time" 
-                               name="read_time" 
-                               value="{{ old('read_time', 5) }}" 
-                               min="1">
-                        @error('read_time')
-                            <div class="invalid-feedback">{{ $message }}</div>
-                        @enderror
-                    </div>
-
-                    <hr>
-
-                    <!-- Submit Buttons -->
-                    <button type="submit" class="btn btn-primary w-100 mb-2">
-                        <i class="bi bi-check-circle"></i> Create Article
-                    </button>
-                    <a href="{{ route('admin.articles.index') }}" class="btn btn-secondary w-100">
-                        <i class="bi bi-x-circle"></i> Cancel
-                    </a>
-                </div>
-            </div>
-
-            <div class="card mb-3">
-                <div class="card-header bg-white">
-                    <h5 class="mb-0">Category</h5>
-                </div>
-                <div class="card-body">
-                    <select class="form-select @error('category_id') is-invalid @enderror" 
-                            name="category_id" 
-                            required>
-                        <option value="">Select Category</option>
+                <div class="form-group" style="margin-bottom: 0;">
+                    <select class="form-select @error('category_id') is-invalid @enderror" name="category_id" required>
+                        <option value="">-- Select a Category --</option>
                         @foreach($categories as $category)
-                            <option value="{{ $category->id }}" 
-                                    {{ old('category_id') == $category->id ? 'selected' : '' }}>
-                                {{ $category->icon }} {{ $category->name }}
+                            <option value="{{ $category->id }}" {{ old('category_id') == $category->id ? 'selected' : '' }}>
+                                {{ $category->name }}
                             </option>
                         @endforeach
                     </select>
-                    @error('category_id')
-                        <div class="invalid-feedback">{{ $message }}</div>
-                    @enderror
+                    @error('category_id') <span class="form-text-error">{{ $message }}</span> @enderror
                 </div>
             </div>
 
-            <div class="card">
-                <div class="card-header bg-white">
-                    <h5 class="mb-0">Thumbnail</h5>
+            <div class="card" style="margin-bottom: 1.5rem;">
+                <div class="card__header">
+                    <i class="bi bi-image"></i> Thumbnail
                 </div>
-                <div class="card-body">
-                    <div class="mb-3">
-                        <input type="file" 
-                               class="form-control @error('thumbnail') is-invalid @enderror" 
-                               id="thumbnail" 
-                               name="thumbnail" 
-                               accept="image/*"
-                               onchange="previewImage(event)">
-                        @error('thumbnail')
-                            <div class="invalid-feedback">{{ $message }}</div>
-                        @enderror
-                        <small class="text-muted">Max 2MB (JPEG, PNG, WebP)</small>
-                    </div>
+                <div class="form-group" style="margin-bottom: 0;">
+                    <input type="file" class="form-input @error('thumbnail') is-invalid @enderror" id="thumbnail" name="thumbnail" accept="image/*" onchange="previewImage(event)" style="padding: 0.5rem; background: var(--gray-50); cursor: pointer;">
+                    <span class="form-text-muted">Format: JPEG, PNG, WebP. Max 2MB.</span>
+                    @error('thumbnail') <span class="form-text-error">{{ $message }}</span> @enderror
                     
-                    <!-- Image Preview -->
-                    <div id="imagePreview" class="d-none">
-                        <img id="preview" src="" alt="Preview" class="img-fluid rounded">
+                    <div id="imagePreview" class="image-preview-box d-none">
+                        <img id="preview" src="" alt="Preview" style="width: 100%; max-height: 250px; object-fit: cover;">
                     </div>
                 </div>
             </div>
+
+            <div class="sticky-actions">
+                <div class="card">
+                    <div class="card__header">
+                        <i class="bi bi-rocket-takeoff"></i> Publish & Save
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-switch" for="is_published">
+                            <input type="checkbox" id="is_published" name="is_published" value="1" {{ old('is_published') ? 'checked' : '' }}>
+                            <span class="form-label" style="margin: 0; font-weight: 500; cursor: pointer;">Publish Immediately</span>
+                        </label>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="read_time" class="form-label">Read Time (minutes)</label>
+                        <input type="number" class="form-input @error('read_time') is-invalid @enderror" id="read_time" name="read_time" value="{{ old('read_time', 5) }}" min="1">
+                        @error('read_time') <span class="form-text-error">{{ $message }}</span> @enderror
+                    </div>
+
+                    <hr style="border: none; border-top: 1px dashed var(--gray-200); margin: 1.5rem 0;">
+
+                    <div class="d-flex gap-2" style="flex-direction: column;">
+                        <button type="submit" class="btn btn--primary btn--full" style="padding: 0.8rem;">
+                            <i class="bi bi-check-circle"></i> Save Article
+                        </button>
+                        <a href="{{ route('admin.articles.index') }}" class="btn btn--secondary btn--full">
+                            Cancel
+                        </a>
+                    </div>
+                </div>
+            </div>
+
         </div>
     </div>
 </form>
@@ -167,55 +121,58 @@
 @push('scripts')
 <script src="https://cdn.quilljs.com/1.3.6/quill.js"></script>
 <script>
-// Initialize Quill
-var quill = new Quill('#quillEditor', {
-    theme: 'snow',
-    modules: {
-        toolbar: [
-            [{ 'header': [1, 2, 3, false] }],
-            ['bold', 'italic', 'underline', 'strike'],
-            [{ 'list': 'ordered'}, { 'list': 'bullet' }],
-            [{ 'color': [] }, { 'background': [] }],
-            ['link'],
-            ['clean']
-        ]
+    var quill = new Quill('#quillEditor', {
+        theme: 'snow',
+        placeholder: 'Write your amazing article here...',
+        modules: {
+            toolbar: [
+                [{ 'header': [1, 2, 3, false] }],
+                ['bold', 'italic', 'underline', 'strike'],
+                [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+                [{ 'color': [] }, { 'background': [] }],
+                ['link'],
+                ['clean']
+            ]
+        }
+    });
+
+    @if(old('content'))
+        quill.root.innerHTML = {!! json_encode(old('content')) !!};
+    @endif
+
+    document.getElementById('articleForm').addEventListener('submit', function(e) {
+        var content = quill.root.innerHTML;
+        var text = quill.getText().trim();
+        
+        document.getElementById('contentInput').value = content;
+        
+        if (text.length === 0) {
+            e.preventDefault();
+
+            var errorSpan = document.createElement('span');
+            errorSpan.className = 'form-text-error';
+            errorSpan.innerText = 'Article content cannot be empty!';
+            if (!document.getElementById('contentError')) {
+                errorSpan.id = 'contentError';
+                document.getElementById('quillEditor').parentNode.appendChild(errorSpan);
+            }
+            document.querySelector('.ql-editor').focus();
+            return false;
+        }
+    });
+
+    function previewImage(event) {
+        var reader = new FileReader();
+        reader.onload = function(){
+            var output = document.getElementById('preview');
+            var previewBox = document.getElementById('imagePreview');
+            output.src = reader.result;
+            previewBox.classList.remove('d-none');
+        };
+        
+        if(event.target.files[0]) {
+            reader.readAsDataURL(event.target.files[0]);
+        }
     }
-});
-
-// Load old content if exists
-@if(old('content'))
-    quill.root.innerHTML = {!! json_encode(old('content')) !!};
-@endif
-
-// Handle form submit
-document.getElementById('articleForm').addEventListener('submit', function(e) {
-    // Get content from Quill
-    var content = quill.root.innerHTML;
-    var text = quill.getText().trim();
-    
-    // Set to hidden input
-    document.getElementById('contentInput').value = content;
-    
-    // Validate
-    if (text.length === 0) {
-        e.preventDefault();
-        alert('Content tidak boleh kosong!');
-        return false;
-    }
-    
-    console.log('Submitting content:', content.substring(0, 100) + '...');
-});
-
-// Image preview
-function previewImage(event) {
-    var reader = new FileReader();
-    reader.onload = function(){
-        var output = document.getElementById('preview');
-        var preview = document.getElementById('imagePreview');
-        output.src = reader.result;
-        preview.classList.remove('d-none');
-    };
-    reader.readAsDataURL(event.target.files[0]);
-}
 </script>
 @endpush

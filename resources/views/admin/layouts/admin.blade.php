@@ -3,124 +3,144 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>@yield('title', 'Admin') - KidPosture</title>
+    <title>@yield('title', 'Admin') - Posturely</title>
     
-    <!-- Bootstrap 5 CSS -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <!-- Bootstrap Icons -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
     
-    <style>
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
-        .sidebar { min-height: 100vh; background: linear-gradient(180deg, #4e73df 0%, #224abe 100%); }
-        .sidebar .nav-link { color: rgba(255,255,255,0.8); padding: 0.75rem 1rem; border-radius: 0.35rem; margin: 0.25rem 0; }
-        .sidebar .nav-link:hover, .sidebar .nav-link.active { background: rgba(255,255,255,0.1); color: #fff; }
-        .sidebar .nav-link i { margin-right: 0.5rem; width: 20px; }
-        .navbar { box-shadow: 0 0.15rem 1.75rem 0 rgba(58,59,69,0.15); }
-        .card { border: none; box-shadow: 0 0.15rem 1.75rem 0 rgba(58,59,69,0.15); margin-bottom: 1.5rem; }
-        .btn-primary { background: #4e73df; border-color: #4e73df; }
-        .btn-primary:hover { background: #2e59d9; border-color: #2653d4; }
-        .table-actions { white-space: nowrap; }
-    </style>
+    <link rel="stylesheet" href="{{ asset('css/admin.css') }}">
     
     @stack('styles')
 </head>
-<body>
-    <div class="container-fluid">
-        <div class="row">
-            <!-- Sidebar -->
-            <div class="col-md-2 col-lg-2 px-0 sidebar">
-                <div class="p-3 text-white">
-                    <h4 class="mb-4"><i class="bi bi-lightning-charge-fill"></i> KidPosture</h4>
-                    <ul class="nav flex-column">
-                        <li class="nav-item">
-                            <a class="nav-link {{ request()->routeIs('admin.dashboard') ? 'active' : '' }}" 
-                               href="{{ route('admin.dashboard') }}">
-                                <i class="bi bi-speedometer2"></i> Dashboard
-                            </a>
-                        </li>
+<body class="admin-body">
+    <div class="admin-layout" id="adminLayout">
+        
+        <div class="sidebar-overlay" id="sidebarOverlay"></div>
 
-                        <li class="nav-item">
-                            <a class="nav-link {{ request()->routeIs('admin.articles.*') ? 'active' : '' }}" 
-                               href="{{ route('admin.articles.index') }}">
-                                <i class="bi bi-file-earmark-text"></i> Articles
-                            </a>
-                        </li>
-
-                        <li class="nav-item">
-                            <a class="nav-link {{ request()->routeIs('admin.physiotherapists.*') ? 'active' : '' }}" 
-                               href="{{ route('admin.physiotherapists.index') }}">
-                                <i class="bi bi-hospital"></i> Physiotherapists
-                            </a>
-                        </li>
-
-                        <li class="nav-item mt-4">
-                            <form action="{{ route('logout') }}" method="POST">
-                                @csrf
-                                <button type="submit" class="nav-link border-0 bg-transparent w-100 text-start">
-                                    <i class="bi bi-box-arrow-right"></i> Logout
-                                </button>
-                            </form>
-                        </li>
-                    </ul>
-                </div>
+        <button class="floating-toggle-btn" id="openSidebarBtn" title="Open Menu">
+            <i class="bi bi-list"></i>
+        </button>
+        
+        <aside class="admin-sidebar" id="adminSidebar">
+            <div class="admin-sidebar__header">
+                <a href="{{ route('admin.dashboard') }}" class="landing-logo">
+                    Posturely
+                    <span class="landing-logo__dot"></span>
+                </a>
+                <button class="sidebar-toggle-btn" id="closeSidebarBtn" title="Close Menu">
+                    <i class="bi bi-list"></i>
+                </button>
             </div>
 
-            <!-- Main Content -->
-            <div class="col-md-10 col-lg-10">
-                <!-- Top Navbar -->
-                <nav class="navbar navbar-expand-lg navbar-light bg-white mb-4">
-                    <div class="container-fluid">
-                        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
-                            <span class="navbar-toggler-icon"></span>
-                        </button>
-                        <div class="collapse navbar-collapse" id="navbarNav">
-                            <ul class="navbar-nav ms-auto">
-                                <li class="nav-item dropdown">
-                                    <a class="nav-link dropdown-toggle" href="#" id="userDropdown" role="button" 
-                                       data-bs-toggle="dropdown">
-                                        <i class="bi bi-person-circle"></i> {{ auth()->user()->name }}
-                                    </a>
-                                    <ul class="dropdown-menu dropdown-menu-end">
-                                        <li><a class="dropdown-item" href="#">Profile</a></li>
-                                        <li><hr class="dropdown-divider"></li>
-                                        <li>
-                                            <form action="{{ route('logout') }}" method="POST">
-                                                @csrf
-                                                <button type="submit" class="dropdown-item">Logout</button>
-                                            </form>
-                                        </li>
-                                    </ul>
-                                </li>
-                            </ul>
-                        </div>
+            <nav class="admin-nav">
+    <a href="{{ route('admin.dashboard') }}" class="admin-nav__link {{ request()->routeIs('admin.dashboard') ? 'active' : '' }}">
+        <i class="bi bi-speedometer2"></i> Dashboard
+    </a>
+
+    <a href="{{ route('admin.articles.index') }}" class="admin-nav__link {{ request()->routeIs('admin.articles.*') ? 'active' : '' }}">
+        <i class="bi bi-file-earmark-text"></i> Articles
+    </a>
+
+    <a href="{{ route('admin.categories.index') }}" class="admin-nav__link {{ request()->routeIs('admin.categories.*') ? 'active' : '' }}">
+        <i class="bi bi-tags"></i> Categories
+    </a>
+
+    <a href="{{ route('admin.physiotherapists.index') }}" class="admin-nav__link {{ request()->routeIs('admin.physiotherapists.*') ? 'active' : '' }}">
+        <i class="bi bi-hospital"></i> Physiotherapists
+    </a>
+
+    <a href="{{ route('admin.users.index') }}" class="admin-nav__link {{ request()->routeIs('admin.users.*') ? 'active' : '' }}">
+        <i class="bi bi-people"></i> Users
+    </a>
+
+    <div class="admin-nav__divider"></div>
+
+    <form action="{{ route('logout') }}" method="POST" class="admin-nav__form">
+        @csrf
+        <button type="submit" class="admin-nav__link admin-nav__link--danger" style="width: 100%; text-align: left;">
+            <i class="bi bi-box-arrow-right"></i> Logout
+        </button>
+    </form>
+</nav>
+        </aside>
+
+        <div class="admin-main">
+            
+            <header class="admin-topbar">
+                <div class="user-menu">
+                    <button class="user-menu__toggle">
+                        <i class="bi bi-person-circle"></i> 
+                        <span class="user-name-text">{{ auth()->user()->name ?? 'Admin User' }}</span>
+                        <i class="bi bi-chevron-down ms-1" style="font-size: 0.8rem;"></i>
+                    </button>
+                    <div class="user-menu__dropdown">
+                        <a href="#" class="user-menu__item">Profile</a>
+                        <div class="user-menu__divider"></div>
+                        <form action="{{ route('logout') }}" method="POST">
+                            @csrf
+                            <button type="submit" class="user-menu__item user-menu__item--danger">Logout</button>
+                        </form>
                     </div>
-                </nav>
-
-                <!-- Page Content -->
-                <div class="px-4 pb-4">
-                    @if(session('success'))
-                        <div class="alert alert-success alert-dismissible fade show">
-                            <i class="bi bi-check-circle"></i> {{ session('success') }}
-                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                        </div>
-                    @endif
-
-                    @if(session('error'))
-                        <div class="alert alert-danger alert-dismissible fade show">
-                            <i class="bi bi-exclamation-circle"></i> {{ session('error') }}
-                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                        </div>
-                    @endif
-
-                    @yield('content')
                 </div>
-            </div>
+            </header>
+
+            <main class="admin-content">
+                @if(session('success'))
+                    <div class="alert alert--success">
+                        <i class="bi bi-check-circle-fill alert__icon"></i>
+                        <span class="alert__text">{{ session('success') }}</span>
+                    </div>
+                @endif
+
+                @if(session('error'))
+                    <div class="alert alert--danger">
+                        <i class="bi bi-exclamation-triangle-fill alert__icon"></i>
+                        <span class="alert__text">{{ session('error') }}</span>
+                    </div>
+                @endif
+
+                @yield('content')
+            </main>
         </div>
     </div>
 
-    <!-- Bootstrap 5 JS -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const layout = document.getElementById('adminLayout');
+            const closeBtn = document.getElementById('closeSidebarBtn'); // Tombol di DALAM sidebar
+            const openBtn = document.getElementById('openSidebarBtn');   // Tombol melayang di luar sidebar
+            const overlay = document.getElementById('sidebarOverlay');
+
+            function toggleSidebar() {
+                if (window.innerWidth <= 1024) {
+                    layout.classList.toggle('mobile-active');
+                } else {
+                    layout.classList.toggle('desktop-collapsed');
+                }
+            }
+
+            // Saat tombol di dalam sidebar ditekan
+            closeBtn.addEventListener('click', toggleSidebar);
+            
+            // Saat tombol melayang (hamburger) ditekan
+            openBtn.addEventListener('click', toggleSidebar);
+
+            // Menutup menu jika area gelap (overlay) di-klik di HP
+            overlay.addEventListener('click', function() {
+                layout.classList.remove('mobile-active');
+            });
+
+            // Reset status saat layar di-resize (misal muter layar HP/Tablet)
+            window.addEventListener('resize', function() {
+                if (window.innerWidth > 1024) {
+                    layout.classList.remove('mobile-active');
+                } else {
+                    layout.classList.remove('desktop-collapsed');
+                }
+            });
+        });
+    </script>
+
     @stack('scripts')
 </body>
 </html>

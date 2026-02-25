@@ -1,205 +1,192 @@
 @extends('admin.layouts.admin')
 
-
 @section('title', $article->title)
 
+@push('styles')
+    <link rel="stylesheet" href="{{ asset('css/article-show.css') }}">
+@endpush
+
 @section('content')
-<div class="d-flex justify-content-between align-items-center mb-4">
-    <h2><i class="bi bi-file-earmark-text"></i> Article Details</h2>
-    <div>
-        <a href="{{ route('admin.articles.edit', $article) }}" class="btn btn-warning">
+<div class="page-header">
+    <h2 class="page-title"><i class="bi bi-file-earmark-text"></i> Article Details</h2>
+    <div class="d-flex gap-2">
+        <a href="{{ route('admin.articles.edit', $article) }}" class="btn btn--warning">
             <i class="bi bi-pencil"></i> Edit
         </a>
-        <a href="{{ route('admin.articles.index') }}" class="btn btn-secondary">
+        <a href="{{ route('admin.articles.index') }}" class="btn btn--secondary">
             <i class="bi bi-arrow-left"></i> Back to List
         </a>
     </div>
 </div>
 
-<div class="row">
-    <div class="col-lg-8">
-        <div class="card">
+<div class="content-grid">
+    <div class="content-main">
+        <div class="card" style="padding: 0; overflow: hidden;">
+            
             @if($article->thumbnail)
                 <img src="{{ asset('storage/' . $article->thumbnail) }}" 
-                     class="card-img-top" 
                      alt="{{ $article->title }}"
-                     style="max-height: 400px; object-fit: cover;">
+                     class="article-hero-img">
             @endif
             
-            <div class="card-body">
-                <!-- Title -->
-                <h1 class="card-title mb-3">{{ $article->title }}</h1>
+            <div class="article-body-wrapper">
+                <h1 class="article-title-heading">
+                    {{ $article->title }}
+                </h1>
 
-                <!-- Meta Info -->
-                <div class="d-flex flex-wrap gap-3 mb-4 text-muted small">
-                    <span>
-                        <i class="bi bi-folder"></i> 
-                        <span class="badge bg-secondary">
-                            {{ $article->category->icon }} {{ $article->category->name }}
-                        </span>
+                <div class="article-meta-row">
+                    <span class="badge badge--secondary">
+                        {{ $article->category->name ?? 'Uncategorized' }}
                     </span>
-                    <span>
-                        <i class="bi bi-person"></i> {{ $article->author->name }}
-                    </span>
-                    <span>
-                        <i class="bi bi-clock"></i> {{ $article->read_time }} min read
-                    </span>
-                    <span>
-                        <i class="bi bi-eye"></i> {{ $article->views }} views
-                    </span>
-                    <span>
-                        <i class="bi bi-calendar"></i> {{ $article->created_at->format('d M Y') }}
-                    </span>
+                    <span class="d-flex align-center gap-2"><i class="bi bi-person"></i> {{ $article->author->name }}</span>
+                    <span class="d-flex align-center gap-2"><i class="bi bi-clock"></i> {{ $article->read_time }} min read</span>
+                    <span class="d-flex align-center gap-2"><i class="bi bi-eye"></i> {{ $article->views }} views</span>
+                    <span class="d-flex align-center gap-2"><i class="bi bi-calendar"></i> {{ $article->created_at->format('d M Y') }}</span>
                 </div>
 
-                <!-- Excerpt -->
                 @if($article->excerpt)
-                    <div class="alert alert-light border">
-                        <strong>Excerpt:</strong> {{ $article->excerpt }}
+                    <div class="article-excerpt-box">
+                        {{ $article->excerpt }}
                     </div>
                 @endif
 
-                <hr>
-
-                <!-- Content -->
                 <div class="article-content">
                     {!! $article->content !!}
                 </div>
             </div>
 
-            <div class="card-footer bg-white">
-                <div class="d-flex justify-content-between align-items-center">
-                    <div>
-                        @if($article->is_published)
-                            <span class="badge bg-success">
-                                <i class="bi bi-check-circle"></i> Published
-                            </span>
-                            @if($article->published_at)
-                                <small class="text-muted ms-2">
-                                    on {{ $article->published_at->format('d M Y, H:i') }}
-                                </small>
-                            @endif
-                        @else
-                            <span class="badge bg-warning">
-                                <i class="bi bi-pencil"></i> Draft
+            <div class="article-action-footer">
+                <div>
+                    @if($article->is_published)
+                        <span class="badge badge--success"><i class="bi bi-check-circle"></i> Published</span>
+                        @if($article->published_at)
+                            <span style="font-size: 0.85rem; color: var(--gray-500); margin-left: 0.5rem;">
+                                on {{ $article->published_at->format('d M Y, H:i') }}
                             </span>
                         @endif
-                    </div>
-                    
-                    <div>
-                        <a href="{{ route('admin.articles.edit', $article) }}" class="btn btn-sm btn-warning">
-                            <i class="bi bi-pencil"></i> Edit
-                        </a>
-                        <form action="{{ route('admin.articles.destroy', $article) }}" 
-                              method="POST" 
-                              class="d-inline"
-                              onsubmit="return confirm('Are you sure you want to delete this article?');">
-                            @csrf
-                            @method('DELETE')
-                            <button type="submit" class="btn btn-sm btn-danger">
-                                <i class="bi bi-trash"></i> Delete
-                            </button>
-                        </form>
-                    </div>
+                    @else
+                        <span class="badge badge--warning"><i class="bi bi-pencil"></i> Draft</span>
+                    @endif
+                </div>
+                
+                <div class="d-flex gap-2">
+                    <a href="{{ route('admin.articles.edit', $article) }}" class="btn btn--warning btn--sm">
+                        <i class="bi bi-pencil"></i> Edit
+                    </a>
+                    <button type="button" class="btn btn--danger btn--sm" onclick="openDeleteModal('{{ route('admin.articles.destroy', $article) }}', '{{ Str::limit($article->title, 30) }}')">
+                        <i class="bi bi-trash"></i> Delete
+                    </button>
                 </div>
             </div>
         </div>
     </div>
 
-    <div class="col-lg-4">
-        <!-- Quick Stats -->
-        <div class="card mb-3">
-            <div class="card-header bg-white">
-                <h5 class="mb-0"><i class="bi bi-graph-up"></i> Statistics</h5>
+    <div class="content-sidebar">
+        <div class="card" style="margin-bottom: 1.5rem;">
+            <div class="card__header">
+                <i class="bi bi-graph-up"></i> Statistics
             </div>
-            <div class="card-body">
-                <div class="mb-3">
-                    <div class="d-flex justify-content-between">
-                        <span class="text-muted">Total Views</span>
-                        <strong>{{ $article->views }}</strong>
-                    </div>
+            <div class="sidebar-info-list">
+                <div class="sidebar-info-row">
+                    <span class="sidebar-info-label">Total Views</span>
+                    <span class="sidebar-info-value" style="font-size: 1.1rem;">{{ $article->views }}</span>
                 </div>
-                <div class="mb-3">
-                    <div class="d-flex justify-content-between">
-                        <span class="text-muted">Read Time</span>
-                        <strong>{{ $article->read_time }} min</strong>
-                    </div>
+                <hr class="sidebar-divider">
+                
+                <div class="sidebar-info-row">
+                    <span class="sidebar-info-label">Read Time</span>
+                    <span class="sidebar-info-value">{{ $article->read_time }} min</span>
                 </div>
-                <div class="mb-3">
-                    <div class="d-flex justify-content-between">
-                        <span class="text-muted">Category</span>
-                        <span class="badge bg-secondary">
-                            {{ $article->category->icon }} {{ $article->category->name }}
-                        </span>
-                    </div>
+                <hr class="sidebar-divider">
+                
+                <div class="sidebar-info-row">
+                    <span class="sidebar-info-label">Category</span>
+                    <span class="badge badge--secondary">{{ $article->category->name ?? 'None' }}</span>
                 </div>
-                <div>
-                    <div class="d-flex justify-content-between">
-                        <span class="text-muted">Status</span>
-                        @if($article->is_published)
-                            <span class="badge bg-success">Published</span>
-                        @else
-                            <span class="badge bg-warning">Draft</span>
-                        @endif
-                    </div>
+                <hr class="sidebar-divider">
+                
+                <div class="sidebar-info-row">
+                    <span class="sidebar-info-label">Status</span>
+                    @if($article->is_published)
+                        <span class="badge badge--success">Published</span>
+                    @else
+                        <span class="badge badge--warning">Draft</span>
+                    @endif
                 </div>
             </div>
         </div>
 
-        <!-- Article Info -->
         <div class="card">
-            <div class="card-header bg-white">
-                <h5 class="mb-0"><i class="bi bi-info-circle"></i> Article Info</h5>
+            <div class="card__header">
+                <i class="bi bi-info-circle"></i> Timeline Info
             </div>
-            <div class="card-body">
-                <div class="mb-2">
-                    <small class="text-muted">Author</small>
-                    <div><strong>{{ $article->author->name }}</strong></div>
+            <div class="sidebar-info-list">
+                <div>
+                    <span class="form-text-muted mt-0">Author</span>
+                    <span class="sidebar-info-value" style="display: block; margin-top: 0.2rem;">{{ $article->author->name }}</span>
                 </div>
-                <hr>
-                <div class="mb-2">
-                    <small class="text-muted">Created</small>
-                    <div>{{ $article->created_at->format('d M Y, H:i') }}</div>
-                    <small class="text-muted">({{ $article->created_at->diffForHumans() }})</small>
+                <hr class="sidebar-divider-solid">
+                
+                <div>
+                    <span class="form-text-muted mt-0">Created</span>
+                    <div class="sidebar-info-value" style="margin-top: 0.2rem;">{{ $article->created_at->format('d M Y, H:i') }}</div>
+                    <span style="color: var(--gray-400); font-size: 0.8rem;">({{ $article->created_at->diffForHumans() }})</span>
                 </div>
-                <hr>
-                <div class="mb-2">
-                    <small class="text-muted">Last Updated</small>
-                    <div>{{ $article->updated_at->format('d M Y, H:i') }}</div>
-                    <small class="text-muted">({{ $article->updated_at->diffForHumans() }})</small>
+                <hr class="sidebar-divider-solid">
+                
+                <div>
+                    <span class="form-text-muted mt-0">Last Updated</span>
+                    <div class="sidebar-info-value" style="margin-top: 0.2rem;">{{ $article->updated_at->format('d M Y, H:i') }}</div>
+                    <span style="color: var(--gray-400); font-size: 0.8rem;">({{ $article->updated_at->diffForHumans() }})</span>
                 </div>
+                
                 @if($article->published_at)
-                    <hr>
-                    <div>
-                        <small class="text-muted">Published</small>
-                        <div>{{ $article->published_at->format('d M Y, H:i') }}</div>
-                        <small class="text-muted">({{ $article->published_at->diffForHumans() }})</small>
-                    </div>
+                <hr class="sidebar-divider-solid">
+                <div>
+                    <span class="form-text-muted mt-0">Published Date</span>
+                    <div class="sidebar-info-value" style="margin-top: 0.2rem;">{{ $article->published_at->format('d M Y, H:i') }}</div>
+                </div>
                 @endif
             </div>
         </div>
     </div>
 </div>
+
+<div class="modal-overlay" id="deleteModal">
+    <div class="modal-box" style="max-width: 400px; text-align: center;">
+        <div class="modal-body" style="padding: 2.5rem 1.5rem 1.5rem;">
+            <i class="bi bi-exclamation-circle text-danger" style="font-size: 4rem; color: #ef4444; margin-bottom: 1rem; display: block;"></i>
+            <h3 style="font-size: 1.25rem; color: var(--gray-900); margin-bottom: 0.5rem;">Hapus Artikel?</h3>
+            <p style="color: var(--gray-600); margin-bottom: 0;">
+                Apakah Anda yakin ingin menghapus artikel <br><strong id="deleteArticleTitle" style="color: var(--gray-900);"></strong>?
+            </p>
+        </div>
+        <form id="deleteForm" method="POST" class="modal-footer" style="justify-content: center; background: transparent; border-top: none; padding-top: 0;">
+            @csrf
+            @method('DELETE')
+            <button type="button" class="btn btn--secondary" onclick="closeModal('deleteModal')">Batal</button>
+            <button type="submit" class="btn btn--danger">Ya, Hapus!</button>
+        </form>
+    </div>
+</div>
 @endsection
 
-@push('styles')
-<style>
-    .article-content {
-        font-size: 1.1rem;
-        line-height: 1.8;
+@push('scripts')
+<script>
+    function openDeleteModal(actionRoute, title) {
+        document.getElementById('deleteForm').action = actionRoute;
+        document.getElementById('deleteArticleTitle').textContent = '"' + title + '"';
+        document.getElementById('deleteModal').classList.add('show');
     }
-    .article-content img {
-        max-width: 100%;
-        height: auto;
-        border-radius: 0.5rem;
-        margin: 1rem 0;
+
+    function closeModal(modalId) {
+        document.getElementById(modalId).classList.remove('show');
     }
-    .article-content h1, .article-content h2, .article-content h3 {
-        margin-top: 1.5rem;
-        margin-bottom: 1rem;
+
+    window.onclick = function(event) {
+        if (event.target.classList.contains('modal-overlay')) {
+            event.target.classList.remove('show');
+        }
     }
-    .article-content p {
-        margin-bottom: 1rem;
-    }
-</style>
+</script>
 @endpush

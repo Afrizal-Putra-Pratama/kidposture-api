@@ -1,0 +1,123 @@
+/* =========================================
+   DASHBOARD SPECIFIC STYLES
+   ========================================= */
+
+/* Grid Horizontal untuk Dashboard Stats (Satu Baris) */
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 2.5rem;
+}
+
+@media (max-width: 1024px) {
+    .content-grid {
+        grid-template-columns: minmax(0, 1fr) !important;
+    }
+}
+
+@media (max-width: 640px) {
+    .stats-grid { grid-template-columns: minmax(0, 1fr); }
+}
+
+.stat-card {
+    background: var(--white);
+    border-radius: 14px;
+    padding: 1.5rem;
+    border: 1px solid var(--gray-200);
+    box-shadow: 0 4px 15px rgba(15, 23, 42, 0.03);
+    display: flex;
+    align-items: center;
+    gap: 1.25rem;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.stat-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 10px 25px rgba(15, 23, 42, 0.08);
+}
+
+.stat-card__icon {
+    width: 54px;
+    height: 54px;
+    border-radius: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.6rem;
+    flex-shrink: 0;
+}
+
+.stat-card__icon--blue { background: var(--accent-soft); color: var(--accent-dark); }
+.stat-card__icon--green { background: #d1fae5; color: #059669; }
+.stat-card__icon--warning { background: #fef3c7; color: #d97706; }
+.stat-card__icon--info { background: #e0f2fe; color: #0284c7; }
+
+.stat-card__info {
+    display: flex;
+    flex-direction: column;
+}
+
+.stat-card__label {
+    color: var(--gray-500);
+    font-size: 0.8rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 0.2rem;
+}
+
+.stat-card__value {
+    color: var(--gray-900);
+    font-size: 1.6rem;
+    font-weight: 700;
+    line-height: 1.1;
+}
+
+/* =========================================
+   TABLE SORTING & PAGINATION STYLES
+   ========================================= */
+.table-sort-link {
+    color: var(--gray-500);
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    transition: color 0.2s ease;
+}
+
+.table-sort-link:hover {
+    color: var(--accent-dark);
+}
+
+.table-sort-link i {
+    font-size: 0.7rem;
+    opacity: 0.5;
+}
+
+.table-sort-link.active {
+    color: var(--gray-900);
+}
+
+.table-sort-link.active i {
+    opacity: 1;
+    color: var(--accent);
+}
+
+/* Paginasi Khusus Dashboard (menghilangkan border card bawaan bootstrap) */
+.dashboard-pagination {
+    padding: 1rem 1.5rem;
+    border-top: 1px solid var(--gray-200);
+    background: var(--gray-50);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.dashboard-pagination nav {
+    margin-bottom: 0;
+}
+
+.dashboard-pagination .pagination {
+    margin-bottom: 0;
+}

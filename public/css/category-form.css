@@ -1,0 +1,30 @@
+/* =========================================
+   CATEGORY FORM STYLES
+   ========================================= */
+
+/* Membatasi lebar form kategori agar tidak terlalu lebar di layar PC */
+.category-form-wrapper {
+    max-width: 600px;
+    margin: 0 auto;
+}
+
+.category-form-card {
+    background: var(--white);
+    border-radius: 14px;
+    border: 1px solid var(--gray-200);
+    box-shadow: 0 10px 30px rgba(15, 23, 42, 0.04);
+    overflow: hidden;
+}
+
+.category-form-body {
+    padding: 2rem;
+}
+
+.category-form-footer {
+    padding: 1.5rem 2rem;
+    background: var(--gray-50);
+    border-top: 1px solid var(--gray-200);
+    display: flex;
+    gap: 1rem;
+    justify-content: flex-end;
+}

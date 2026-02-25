@@ -50,19 +50,41 @@ class User extends Authenticatable
         'is_premium'        => 'boolean',
     ];
 
-    // RELASI KE CHILDREN
+    // =========================================
+    // RELASI DATABASE
+    // =========================================
+
+    /**
+     * Relasi ke Children (1 User memiliki banyak Anak)
+     */
     public function children()
     {
         return $this->hasMany(Child::class);
     }
 
-    // RELASI KE PHYSIOTHERAPIST (1 user = 1 profil fisio)
+    /**
+     * Relasi ke Physiotherapist (1 user = 1 profil fisio)
+     */
     public function physiotherapist()
     {
         return $this->hasOne(Physiotherapist::class, 'user_id');
     }
 
-    // Helper role checks
+    /**
+     * Relasi ke Screenings (Melalui tabel Children)
+     * Mengambil semua data screening dari semua anak milik user ini.
+     * Catatan: Ubah menjadi $this->hasMany(Screening::class) jika di tabel 
+     * screenings Anda menggunakan kolom 'user_id' secara langsung.
+     */
+    public function screenings()
+    {
+        return $this->hasManyThrough(Screening::class, Child::class);
+    }
+
+    // =========================================
+    // HELPER METHODS
+    // =========================================
+
     public function isParent(): bool
     {
         return $this->role === self::ROLE_PARENT;

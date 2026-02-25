@@ -1,0 +1,139 @@
+/* =========================================
+   ARTICLE FORM (CREATE & EDIT) STYLES
+   ========================================= */
+
+/* Menimpa desain bawaan Quill agar selaras dengan desain form Posturely */
+.ql-toolbar.ql-snow { 
+    border: 1px solid var(--gray-300); 
+    border-radius: 8px 8px 0 0; 
+    background: var(--gray-50); 
+    font-family: inherit;
+}
+
+.ql-container.ql-snow { 
+    border: 1px solid var(--gray-300); 
+    border-top: none;
+    border-radius: 0 0 8px 8px; 
+    font-family: inherit; 
+    font-size: 1rem; 
+    background: var(--white);
+}
+
+.ql-editor { 
+    min-height: 450px; 
+    line-height: 1.6;
+    color: var(--gray-800);
+}
+
+.ql-editor p {
+    margin-bottom: 1rem;
+}
+
+/* Kustomisasi Switch Toggle yang lebih mulus */
+.form-switch {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    cursor: pointer;
+    padding: 0.5rem 0;
+}
+
+.form-switch input[type="checkbox"] {
+    appearance: none;
+    width: 2.5rem;
+    height: 1.25rem;
+    background-color: var(--gray-300);
+    border-radius: 999px;
+    position: relative;
+    cursor: pointer;
+    outline: none;
+    transition: background-color 0.3s ease;
+}
+
+.form-switch input[type="checkbox"]::after {
+    content: '';
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: calc(1.25rem - 4px);
+    height: calc(1.25rem - 4px);
+    background-color: var(--white);
+    border-radius: 50%;
+    transition: transform 0.3s ease;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}
+
+.form-switch input[type="checkbox"]:checked {
+    background-color: var(--accent);
+}
+
+.form-switch input[type="checkbox"]:checked::after {
+    transform: translateX(1.25rem);
+}
+
+/* Membuat Action Card menempel saat di-scroll (Sticky) */
+.sticky-actions {
+    position: sticky;
+    top: 90px; /* Jarak dari atas layar (menyesuaikan tinggi topbar) */
+    z-index: 10;
+}
+
+/* Image Preview Container */
+.image-preview-box {
+    margin-top: 1rem;
+    border-radius: 8px;
+    overflow: hidden;
+    border: 1px solid var(--gray-200);
+    background: var(--gray-50);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+/* =========================================
+   ARTICLES SPECIFIC STYLES & MODAL
+   ========================================= */
+.custom-table tbody tr {
+    transition: background-color 0.2s ease, transform 0.2s ease;
+}
+.custom-table tbody tr:hover {
+    background-color: var(--gray-50);
+    transform: scale(1.002);
+    box-shadow: inset 3px 0 0 0 var(--accent);
+}
+.article-title-link {
+    text-decoration: none; 
+    color: var(--gray-900); 
+    font-weight: 600; 
+    display: block; 
+    margin-bottom: 0.2rem;
+    transition: color 0.2s ease;
+}
+.article-title-link:hover { color: var(--accent); }
+.pagination-container {
+    padding: 1.5rem; 
+    border-top: 1px solid var(--gray-200);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+/* Modal Styles */
+.modal-overlay {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(15, 23, 42, 0.4); backdrop-filter: blur(3px);
+    z-index: 1050; display: flex; justify-content: center; align-items: center;
+    opacity: 0; visibility: hidden; transition: all 0.3s ease;
+}
+.modal-overlay.show { opacity: 1; visibility: visible; }
+.modal-box {
+    background: var(--white); width: 100%; max-width: 400px;
+    border-radius: 14px; box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+    transform: translateY(-20px) scale(0.95); transition: all 0.3s ease;
+    overflow: hidden; margin: 1rem; text-align: center;
+}
+.modal-overlay.show .modal-box { transform: translateY(0) scale(1); }
+.modal-body { padding: 2.5rem 1.5rem 1.5rem; }
+.modal-footer {
+    padding: 1.25rem 1.5rem; border-top: 1px solid var(--gray-200);
+    display: flex; justify-content: center; gap: 0.75rem; background: var(--gray-50);
+}
