@@ -63,12 +63,10 @@ class Article extends Model
             return null;
         }
 
-        // kalau sudah http/https, langsung pakai
         if (Str::startsWith($this->thumbnail, ['http://', 'https://'])) {
             return $this->thumbnail;
         }
 
-        // kalau cuma "articles/xxx.jpg"
-        return Storage::url($this->thumbnail); // /storage/articles/xxx.jpg
+        return asset('storage/' . $this->thumbnail);
     }
 }

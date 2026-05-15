@@ -33,6 +33,10 @@ return [
     'posture_ai' => [
     'url' => env('POSTURE_AI_URL', 'http://127.0.0.1:8001'),
     ],
+    'midtrans' => [
+        'server_key'    => env('MIDTRANS_SERVER_KEY'),
+        'is_production' => env('MIDTRANS_IS_PRODUCTION', false),
+    ],
 
 
 ];

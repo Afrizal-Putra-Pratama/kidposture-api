@@ -14,7 +14,6 @@ use Illuminate\Support\Facades\Storage;
 
 class ScreeningController extends Controller
 {
-    // List screening per anak (untuk orang tua)
     public function index(Request $request, Child $child)
     {
         if ($child->user_id !== $request->user()->id) {
@@ -29,7 +28,47 @@ class ScreeningController extends Controller
         return response()->json($screenings);
     }
 
-    // Buat screening baru + upload + overlay + crops
+    private function uploadToCloudinary(string $filePath): ?string
+    {
+        $cloudName = env('CLOUDINARY_CLOUD_NAME', 'demdodupd');
+        $apiKey    = env('CLOUDINARY_API_KEY', '435173116591269');
+        $apiSecret = env('CLOUDINARY_API_SECRET', 'PlY-kPX4v2bbcU0Zr6odXbUEc_E');
+        $timestamp = time();
+        $signature = sha1("folder=screenings&timestamp={$timestamp}{$apiSecret}");
+
+        $ch = curl_init();
+        curl_setopt($ch, CURLOPT_URL, "https://api.cloudinary.com/v1_1/{$cloudName}/image/upload");
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+        curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false);
+        curl_setopt($ch, CURLOPT_POST, true);
+        curl_setopt($ch, CURLOPT_POSTFIELDS, [
+            'file'      => new \CURLFile($filePath),
+            'api_key'   => $apiKey,
+            'timestamp' => $timestamp,
+            'signature' => $signature,
+            'folder'    => 'screenings',
+        ]);
+
+        $result = curl_exec($ch);
+        $error  = curl_error($ch);
+        curl_close($ch);
+
+        if ($error) {
+            \Log::error('Cloudinary cURL error', ['error' => $error]);
+            return null;
+        }
+
+        $data = json_decode($result, true);
+
+        if (empty($data['secure_url'])) {
+            \Log::error('Cloudinary upload failed', ['result' => $result]);
+            return null;
+        }
+
+        return $data['secure_url'];
+    }
+
     public function store(Request $request, Child $child, PostureAiService $aiService)
     {
         if ($child->user_id !== $request->user()->id) {
@@ -37,7 +76,7 @@ class ScreeningController extends Controller
         }
 
         $data = $request->validate([
-            'images' => 'required|array|min:1|max:3',
+            'images'         => 'required|array|min:1|max:3',
             'images.*.type'  => 'required|in:FRONT,SIDE,BACK',
             'images.*.image' => 'required|image|max:5120',
         ]);
@@ -68,41 +107,37 @@ class ScreeningController extends Controller
             $path = $directory . '/' . $filename;
 
             $screeningImage = ScreeningImage::create([
-                'screening_id'   => $screening->id,
-                'type'           => $type,
-                'path'           => $path,
-                'processed_path' => null,
-                'recommendations'=> null,
+                'screening_id'    => $screening->id,
+                'type'            => $type,
+                'path'            => $path,
+                'processed_path'  => null,
+                'recommendations' => null,
             ]);
 
-            $publicUrl = asset('storage/' . $path);
-            $aiResult  = $aiService->analyze($publicUrl, $type);
+            // Upload ke Cloudinary via cURL (bypass SSL lokal)
+            $cloudinaryUrl = $this->uploadToCloudinary(storage_path('app/public/' . $path));
 
-            // overlay image
-            if (!empty($aiResult['overlay_image_url'])) {
-                $overlayUrl     = $aiResult['overlay_image_url'];
-                $overlayContent = @file_get_contents($overlayUrl);
-
-                if ($overlayContent !== false && strlen($overlayContent) > 1000) {
-                    $overlayFilename = 'screenings/' . uniqid('overlay_') . '.png';
-                    Storage::disk('public')->put($overlayFilename, $overlayContent);
-
-                    $screeningImage->update([
-                        'processed_path'  => $overlayFilename,
-                        'recommendations' => null,
-                    ]);
-                }
+            // Fallback ke URL lokal kalau Cloudinary gagal
+            if (!$cloudinaryUrl) {
+                $cloudinaryUrl = asset('storage/' . $path);
             }
 
-            // crop images
+            $aiResult = $aiService->analyze($cloudinaryUrl, $type);
+
+            // Overlay image
+            if (!empty($aiResult['overlay_image_url'])) {
+                $screeningImage->update([
+                'processed_path' => $aiResult['overlay_image_url'], // URL Cloudinary langsung
+                ]);
+            }
+
+            // Crop images
             if (!empty($aiResult['crop_images']) && is_array($aiResult['crop_images'])) {
                 foreach ($aiResult['crop_images'] as $crop) {
                     $cropUrl = $crop['url'] ?? null;
                     $region  = $crop['region'] ?? 'unknown';
 
-                    if (!$cropUrl) {
-                        continue;
-                    }
+                    if (!$cropUrl) continue;
 
                     $cropContent = @file_get_contents($cropUrl);
 
@@ -111,11 +146,11 @@ class ScreeningController extends Controller
                         Storage::disk('public')->put($cropFilename, $cropContent);
 
                         ScreeningImage::create([
-                            'screening_id'   => $screening->id,
-                            'type'           => 'CROP_' . strtoupper($region),
-                            'path'           => $cropFilename,
-                            'processed_path' => null,
-                            'recommendations'=> null,
+                            'screening_id'    => $screening->id,
+                            'type'            => 'CROP_' . strtoupper($region),
+                            'path'            => $cropFilename,
+                            'processed_path'  => null,
+                            'recommendations' => null,
                         ]);
                     }
                 }
@@ -135,19 +170,18 @@ class ScreeningController extends Controller
             $category = 'ATTENTION';
         }
 
-        // ✅ PERBAIKAN: sesuaikan dengan field yang BENAR-BENAR dikirim Python
         $mergedMetrics = [];
         if (count($allMetrics) > 0) {
             $keys = [
-                'shoulder_tilt_index',     // dari Python
-                'hip_tilt_index',          // dari Python
-                'forward_head_index',      // dari Python
-                'neck_inclination_deg',    // dari Python
-                'torso_inclination_deg',   // dari Python
+                'shoulder_tilt_index',
+                'hip_tilt_index',
+                'forward_head_index',
+                'neck_inclination_deg',
+                'torso_inclination_deg',
             ];
 
             foreach ($keys as $key) {
-                $values = array_filter(array_column($allMetrics, $key), function($v) {
+                $values = array_filter(array_column($allMetrics, $key), function ($v) {
                     return $v !== null && $v !== '';
                 });
                 if (count($values) > 0) {
@@ -155,8 +189,7 @@ class ScreeningController extends Controller
                 }
             }
             $mergedMetrics['raw_score'] = $avgScore;
-            
-            // Simpan juga findings kalau ada
+
             $allFindings = [];
             foreach ($allMetrics as $m) {
                 if (!empty($m['findings']) && is_array($m['findings'])) {
@@ -181,7 +214,6 @@ class ScreeningController extends Controller
         return response()->json($screening, 201);
     }
 
-    // Detail screening (parent & fisio)
     public function show(Request $request, Screening $screening)
     {
         $user = auth()->user();
@@ -202,14 +234,14 @@ class ScreeningController extends Controller
             'physiotherapist:id,name,clinic_name,city,specialty',
         ]);
 
-        $child = $screening->child;
+        $child    = $screening->child;
         $ageYears = $child->birth_date
             ? \Carbon\Carbon::parse($child->birth_date)->age
             : null;
 
         return response()->json([
             'success' => true,
-            'data' => [
+            'data'    => [
                 'id'              => $screening->id,
                 'score'           => $screening->score,
                 'category'        => $screening->category,
@@ -236,8 +268,10 @@ class ScreeningController extends Controller
                         'id'              => $img->id,
                         'type'            => $img->type,
                         'url_original'    => asset('storage/' . $img->path),
-                        'url_processed'   => $img->processed_path
-                            ? asset('storage/' . $img->processed_path)
+                        'url_processed' => $img->processed_path
+                            ? (str_starts_with($img->processed_path, 'http')
+                            ? $img->processed_path
+                            : asset('storage/' . $img->processed_path))
                             : null,
                         'recommendations' => $img->recommendations ?? [],
                     ];
@@ -248,7 +282,6 @@ class ScreeningController extends Controller
         ]);
     }
 
-    // Parent pilih fisioterapis untuk screening
     public function referToPhysio(Request $request, Screening $screening)
     {
         $user = $request->user();
@@ -264,7 +297,7 @@ class ScreeningController extends Controller
             'physiotherapist_id' => 'required|exists:physiotherapists,id',
         ]);
 
-        if (!in_array(strtoupper((string)$screening->category), ['ATTENTION', 'FAIR'])) {
+        if (!in_array(strtoupper((string) $screening->category), ['ATTENTION', 'FAIR'])) {
             return response()->json([
                 'success' => false,
                 'message' => 'Screening ini tidak memerlukan rujukan fisioterapis.',
@@ -283,7 +316,6 @@ class ScreeningController extends Controller
         ]);
     }
 
-    // Simpan rekomendasi manual + notifikasi
     public function storeRecommendation(Request $request, Screening $screening)
     {
         $validated = $request->validate([
@@ -329,7 +361,6 @@ class ScreeningController extends Controller
         ]);
     }
 
-    // (Opsional) physioIndex lama
     public function physioIndex(Request $request)
     {
         $screenings = Screening::with(['child.user'])
@@ -344,16 +375,15 @@ class ScreeningController extends Controller
 
         return response()->json([
             'success' => true,
-            'data' => $screenings,
+            'data'    => $screenings,
         ]);
     }
 
-    // List referral ke fisioterapis yang login – dipakai dashboard
     public function myReferrals(Request $request)
     {
-        $user = $request->user();
-
+        $user  = $request->user();
         $physio = $user->physiotherapist ?? null;
+
         if (!$physio) {
             return response()->json([
                 'success' => false,
@@ -376,7 +406,7 @@ class ScreeningController extends Controller
                     'summary'         => $s->summary,
                     'created_at'      => $s->created_at,
                     'referral_status' => $s->referral_status,
-                    'child' => [
+                    'child'  => [
                         'id'        => $s->child->id,
                         'name'      => $s->child->name,
                         'age_years' => $s->child->age_years ?? null,
@@ -391,7 +421,6 @@ class ScreeningController extends Controller
         ]);
     }
 
-    // Fisio update status referral + notifikasi
     public function updateReferralStatus(Request $request, Screening $screening)
     {
         $user   = $request->user();
@@ -413,24 +442,13 @@ class ScreeningController extends Controller
         ]);
 
         if (in_array($data['status'], ['accepted', 'completed'])) {
-            $type = $data['status'] === 'accepted'
-                ? 'referral_accepted'
-                : 'referral_completed';
-
-            $title = $data['status'] === 'accepted'
-                ? 'Rujukan Diterima'
-                : 'Konsultasi Selesai';
-
+            $type = $data['status'] === 'accepted' ? 'referral_accepted' : 'referral_completed';
+            $title = $data['status'] === 'accepted' ? 'Rujukan Diterima' : 'Konsultasi Selesai';
             $message = $data['status'] === 'accepted'
                 ? 'Fisioterapis telah menerima rujukan screening untuk anak Anda.'
                 : 'Fisioterapis telah menyelesaikan konsultasi untuk anak Anda. Silakan cek rekomendasi terbaru.';
 
-            NotificationHelper::sendToParent(
-                $screening->id,
-                $type,
-                $title,
-                $message
-            );
+            NotificationHelper::sendToParent($screening->id, $type, $title, $message);
         }
 
         return response()->json([

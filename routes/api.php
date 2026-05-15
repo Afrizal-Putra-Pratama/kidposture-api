@@ -12,6 +12,9 @@ use App\Http\Controllers\Api\NotificationController;
 use App\Http\Controllers\Api\PhysioProfileController;
 use App\Http\Controllers\Api\AdminPhysioController;
 use App\Http\Controllers\Api\PhysioArticleController;
+use App\Http\Controllers\Api\SubscriptionController;
+use App\Http\Controllers\Api\ChatController;
+use App\Http\Controllers\PaymentController;
 
 Route::get('/ping', function () {
     return response()->json(['message' => 'pong']);
@@ -25,6 +28,13 @@ Route::post('/login', [AuthController::class, 'login']);
 Route::get('/categories', [CategoryApiController::class, 'index']);
 Route::get('/articles', [ArticleApiController::class, 'index']);
 Route::get('/articles/{slug}', [ArticleApiController::class, 'show']);
+Route::get('/physiotherapists', [PhysiotherapistController::class, 'index']);
+Route::get('/physiotherapists/{id}', [PhysiotherapistController::class, 'show']);
+Route::post('/webhook/midtrans', [SubscriptionController::class, 'webhook']);
+Route::post('payments/webhook', [PaymentController::class, 'webhook']);
+Route::post('/broadcasting/auth', function (\Illuminate\Http\Request $request) {
+    return \Illuminate\Support\Facades\Broadcast::auth($request);
+})->middleware('auth:sanctum');
 
 // Protected
 Route::middleware('auth:sanctum')->group(function () {
@@ -46,9 +56,6 @@ Route::middleware('auth:sanctum')->group(function () {
     // Parent rujuk ke fisio
     Route::post('/screenings/{screening}/refer', [ScreeningController::class, 'referToPhysio']);
 
-    // Direktori fisioterapis (untuk parent pilih fisio)
-    Route::get('/physiotherapists', [PhysiotherapistController::class, 'index']);
-    Route::get('/physiotherapists/{id}', [PhysiotherapistController::class, 'show']);
 
     // Notifications (parent)
     Route::prefix('notifications')->group(function () {
@@ -85,4 +92,25 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::patch('/physiotherapists/{id}/approve', [AdminPhysioController::class, 'approve']);
         Route::patch('/physiotherapists/{id}/reject', [AdminPhysioController::class, 'reject']);
     });
+    // Subscription & Payment
+    Route::post('/subscription/create-payment', [SubscriptionController::class, 'createPayment']);
+    Route::post('subscription/verify', [SubscriptionController::class, 'verifyPayment']);
+    Route::get('/subscription/status', [SubscriptionController::class, 'checkStatus']);
+    
+    // Chat
+    Route::get('/conversations', [ChatController::class, 'myConversations']);
+    Route::post('/conversations', [ChatController::class, 'getOrCreateConversation']);
+    Route::get('/conversations/{conversation}/messages', [ChatController::class, 'getMessages']);
+    Route::post('/conversations/{conversation}/messages', [ChatController::class, 'sendMessage']);
+
+    Route::prefix('payments')->group(function () {
+    Route::post('create-transaction', [PaymentController::class, 'createTransaction']);
+    Route::post('verify',            [PaymentController::class, 'verify']);
+    
+
+    Route::post('/broadcasting/auth', function (Request $request) {
+    return broadcast()->auth($request);
+
+});
+});
 });

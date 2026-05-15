@@ -1,7 +1,7 @@
 <?php
 
 use Illuminate\Support\Facades\Broadcast;
-
+use App\Models\Conversation;
 /*
 |--------------------------------------------------------------------------
 | Broadcast Channels
@@ -15,4 +15,10 @@ use Illuminate\Support\Facades\Broadcast;
 
 Broadcast::channel('App.Models.User.{id}', function ($user, $id) {
     return (int) $user->id === (int) $id;
+});
+Broadcast::channel('conversation.{conversationId}', function ($user, $conversationId) {
+    $conversation = Conversation::find($conversationId);
+    if (!$conversation) return false;
+    return $conversation->parent_id === $user->id || 
+           $conversation->physio_id === $user->id;
 });
