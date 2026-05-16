@@ -22,7 +22,15 @@ class LoginController extends Controller
 
         if (Auth::attempt($credentials, $request->filled('remember'))) {
             $request->session()->regenerate();
-            return redirect()->intended('/admin');
+
+            if (Auth::user()->role !== 'admin') {
+                Auth::logout();
+                return back()->withErrors([
+                    'email' => 'Akses ditolak.',
+                ]);
+            }
+
+            return redirect('/admin'); 
         }
 
         return back()->withErrors([

@@ -13,12 +13,14 @@ Route::get('/', function () {
 });
 
 // Auth routes
-Route::get('/login', [LoginController::class, 'showLoginForm'])->name('login');
+Route::get('/login', [LoginController::class, 'showLoginForm'])
+    ->name('login')
+    ->middleware('guest');
 Route::post('/login', [LoginController::class, 'login']);
 Route::post('/logout', [LoginController::class, 'logout'])->name('logout');
 
 // Admin routes (protected by auth middleware)
-Route::prefix('admin')->name('admin.')->middleware(['auth'])->group(function () {
+Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(function () {
     
     // Dashboard
     Route::get('/', [DashboardController::class, 'index'])->name('dashboard');
