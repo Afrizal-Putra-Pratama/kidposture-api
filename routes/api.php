@@ -15,6 +15,7 @@ use App\Http\Controllers\Api\PhysioArticleController;
 use App\Http\Controllers\Api\SubscriptionController;
 use App\Http\Controllers\Api\ChatController;
 use App\Http\Controllers\PaymentController;
+use App\Http\Controllers\Api\ScreeningPdfController;
 
 Route::get('/ping', function () {
     return response()->json(['message' => 'pong']);
@@ -52,7 +53,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Detail screening
     Route::get('/screenings/{screening}', [ScreeningController::class, 'show']);
-
+    Route::get('/screenings/{screening}/download-pdf', [ScreeningPdfController::class, 'download']);
     // Parent rujuk ke fisio
     Route::post('/screenings/{screening}/refer', [ScreeningController::class, 'referToPhysio']);
 

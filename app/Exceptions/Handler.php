@@ -27,4 +27,16 @@ class Handler extends ExceptionHandler
             //
         });
     }
+    public function render($request, Throwable $e)
+{
+    $response = parent::render($request, $e);
+    
+    if ($request->is('api/*')) {
+        $response->headers->set('Access-Control-Allow-Origin', '*');
+        $response->headers->set('Access-Control-Allow-Methods', '*');
+        $response->headers->set('Access-Control-Allow-Headers', '*');
+    }
+    
+    return $response;
+}
 }
